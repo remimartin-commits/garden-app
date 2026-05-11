@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import csv
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel
@@ -23,10 +23,12 @@ class CustomerCreateRequest(BaseModel):
     email: str
     phone: Optional[str] = None
     property_address: Optional[str] = None
+    price_agreed_type: Optional[Literal["hourly", "fixed"]] = None
+    price_agreed_amount: Optional[float] = None
 
 
 class CustomerPatchRequest(BaseModel):
-    """Partial update for contact, billing, notes, tags, or primary property address."""
+    """Partial update for contact, billing, notes, tags, primary property address, or agreed pricing."""
 
     name: Optional[str] = None
     email: Optional[str] = None
@@ -36,6 +38,8 @@ class CustomerPatchRequest(BaseModel):
     billing_details: Optional[str] = None
     notes: Optional[str] = None
     tags: Optional[list[str]] = None
+    price_agreed_type: Optional[Literal["hourly", "fixed"]] = None
+    price_agreed_amount: Optional[float] = None
 
 
 class ArchiveSuccessResponse(BaseModel):
@@ -75,7 +79,20 @@ def _sync_primary_property_address(customer: Customer, address: str | None) -> N
 @router.post("/api/v1/customers")
 def create_customer(request: CustomerCreateRequest) -> Customer:
     cid = _allocate_customer_id()
-    customer = Customer(id=cid, name=request.name, email=request.email, phone=request.phone or "")
+    ptype: str | None = None
+    pamt: float | None = None
+    if request.price_agreed_amount is not None:
+        pamt = float(request.price_agreed_amount)
+        raw_t = request.price_agreed_type or "fixed"
+        ptype = raw_t if raw_t in ("hourly", "fixed") else "fixed"
+    customer = Customer(
+        id=cid,
+        name=request.name,
+        email=request.email,
+        phone=request.phone or "",
+        price_agreed_type=ptype,
+        price_agreed_amount=pamt,
+    )
     if request.property_address:
         prop = CustomerProperty(id=1, address=request.property_address, customer_id=cid)
         customer.properties.append(prop)
@@ -102,9 +119,28 @@ def patch_customer(customer_id: int, body: CustomerPatchRequest) -> Customer:
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 
-    data = body.model_dump(exclude_unset=True)
+    raw = body.model_dump(exclude_unset=True)
+    data = dict(raw)
     if "property_address" in data:
         _sync_primary_property_address(customer, data.pop("property_address"))
+    had_amt = "price_agreed_amount" in raw
+    had_typ = "price_agreed_type" in raw
+    if had_amt or had_typ:
+        data.pop("price_agreed_amount", None)
+        data.pop("price_agreed_type", None)
+        new_amt = raw["price_agreed_amount"] if had_amt else customer.price_agreed_amount
+        new_typ = raw["price_agreed_type"] if had_typ else customer.price_agreed_type
+        if had_amt and new_amt is None:
+            customer.price_agreed_amount = None
+            customer.price_agreed_type = None
+        elif new_amt is not None:
+            customer.price_agreed_amount = float(new_amt)
+            t = (new_typ or customer.price_agreed_type or "fixed").lower()
+            customer.price_agreed_type = t if t in ("hourly", "fixed") else "fixed"
+        elif had_typ and new_typ is not None and customer.price_agreed_amount is not None:
+            t = str(new_typ).lower()
+            if t in ("hourly", "fixed"):
+                customer.price_agreed_type = t
     for key, value in data.items():
         if key == "tags" and value is not None:
             customer.tags = list(value)

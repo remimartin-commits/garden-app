@@ -81,6 +81,50 @@ def test_patch_customer_partial_update_name_only_preserves_other_fields() -> Non
     assert data["phone"] == "555"
 
 
+def test_create_customer_with_hourly_price_agreed() -> None:
+    response = client.post(
+        "/api/v1/customers",
+        json={
+            "name": "Priced",
+            "email": "priced@example.com",
+            "price_agreed_type": "hourly",
+            "price_agreed_amount": 120.5,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["price_agreed_type"] == "hourly"
+    assert data["price_agreed_amount"] == 120.5
+
+
+def test_create_customer_price_defaults_to_fixed_per_job() -> None:
+    response = client.post(
+        "/api/v1/customers",
+        json={"name": "Fixed", "email": "fixed@example.com", "price_agreed_amount": 450.0},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["price_agreed_type"] == "fixed"
+    assert data["price_agreed_amount"] == 450.0
+
+
+def test_patch_customer_price_agreed_set_and_clear() -> None:
+    created = client.post("/api/v1/customers", json={"name": "Deal", "email": "deal@example.com"})
+    assert created.status_code == 200
+    customer_id = created.json()["id"]
+    set_price = client.patch(
+        f"/api/v1/customers/{customer_id}",
+        json={"price_agreed_type": "hourly", "price_agreed_amount": 89.0},
+    )
+    assert set_price.status_code == 200
+    assert set_price.json()["price_agreed_type"] == "hourly"
+    assert set_price.json()["price_agreed_amount"] == 89.0
+    clear = client.patch(f"/api/v1/customers/{customer_id}", json={"price_agreed_amount": None})
+    assert clear.status_code == 200
+    assert clear.json().get("price_agreed_amount") is None
+    assert clear.json().get("price_agreed_type") is None
+
+
 def test_patch_customer_not_found_returns_404() -> None:
     response = client.patch("/api/v1/customers/999999999", json={"name": "Ghost"})
     assert response.status_code == 404

@@ -17,9 +17,9 @@ from app.settings_api import router as settings_router
 from app.weather_api import router as weather_router
 from app.service_templates_api import router as service_templates_router
 from app.audit_api import router as audit_router
-from app.recurring_job_api import router as recurring_job_router
 from app.recurring_jobs_api import router as recurring_jobs_router
 from app.reporting_api import router as reporting_router
+from app.plant_exchange_api import router as plant_exchange_router
 from app.entities import DashboardMetrics
 
 _APP_INDEX = Path(__file__).resolve().parent / "static" / "index.html"
@@ -51,9 +51,9 @@ app.include_router(settings_router)
 app.include_router(weather_router)
 app.include_router(service_templates_router)
 app.include_router(audit_router)
-app.include_router(recurring_job_router)
 app.include_router(recurring_jobs_router)
 app.include_router(reporting_router)
+app.include_router(plant_exchange_router)
 
 
 @app.get("/favicon.ico", include_in_schema=False)

@@ -204,6 +204,7 @@
       box-shadow: 0 20px 60px rgba(0,0,0,.18);
     }
     .modal-title { font-size: 1.05rem; font-weight: 800; color: var(--green-900); margin-bottom: 1.1rem; }
+    .modal.modal--wide { width: min(720px, calc(100vw - 2rem)); }
     .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; }
 
     /* ── Toast ── */
@@ -232,6 +233,20 @@
     /* ── Dashboard two-col ── */
     .dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
     @media (max-width: 860px) { .dash-cols { grid-template-columns: 1fr; } }
+
+    /* ── Plant exchange subnav ── */
+    .subnav { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .subnav a {
+      padding: .45rem 1rem; border-radius: .45rem; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--muted); font-size: .85rem; font-weight: 600;
+      text-decoration: none; cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+    }
+    .subnav a:hover { color: var(--text); border-color: var(--green-400); }
+    .subnav a.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
+    .plants-pane { display: none; }
+    .plants-pane.active { display: block; }
+    .page-lead { font-size: .9rem; color: var(--muted); margin: -.5rem 0 1rem; line-height: 1.45; }
+
     @media (max-width: 640px) {
       :root { --sidebar-w: 0px; }
       #sidebar { display: none; }
@@ -262,6 +277,10 @@
     <a href="#" data-page="customers">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Customers
+    </a>
+    <a href="#" data-page="plants">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c4-4 8-8 8-14a8 8 0 0 0-16 0c0 6 4 10 8 14z"/><path d="M12 2v4"/><path d="M8 10h8"/></svg>
+      Plant exchange
     </a>
     <a href="#" data-page="schedule">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -403,13 +422,74 @@
                 <th>Phone</th>
                 <th>Property</th>
                 <th>Tags</th>
+                <th>Agreed pricing</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="customers-tbody">
-              <tr><td colspan="6" class="loading">Loading customers…</td></tr>
+              <tr><td colspan="7" class="loading">Loading customers…</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PLANT EXCHANGE PAGE ══ -->
+    <div id="page-plants" class="page">
+      <div class="page-title">Plant exchange</div>
+      <p class="page-lead">Track plants you are looking for and surplus you can offer to clients or crew. Use status to show progress from seeking or available through to fulfilled or given away.</p>
+      <div class="subnav" id="plants-subnav">
+        <a href="#" class="active" data-plants-tab="wanted">Plants wanted</a>
+        <a href="#" data-plants-tab="giveaway">Plants to give away</a>
+      </div>
+
+      <div id="plants-pane-wanted" class="plants-pane active">
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" placeholder="Search wanted…" id="plant-search-wanted" oninput="renderPlantTables()">
+          </div>
+          <button type="button" class="btn btn-primary" onclick="openPlantModal('wanted', null)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add wanted plant
+          </button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Plant</th><th>Quantity</th><th>Notes</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody id="plants-wanted-tbody">
+                <tr><td colspan="5" class="loading">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="plants-pane-giveaway" class="plants-pane">
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" placeholder="Search giveaways…" id="plant-search-giveaway" oninput="renderPlantTables()">
+          </div>
+          <button type="button" class="btn btn-primary" onclick="openPlantModal('giveaway', null)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add plant to give away
+          </button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Plant</th><th>Quantity</th><th>Notes</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody id="plants-giveaway-tbody">
+                <tr><td colspan="5" class="loading">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -417,9 +497,27 @@
     <!-- ══ SCHEDULE PAGE ══ -->
     <div id="page-schedule" class="page">
       <div class="page-title">Schedule</div>
+      <p class="page-lead">This week’s roster plus recurring job rules (weekly or monthly cadence).</p>
       <div class="card">
         <div class="card-title">Weekly View</div>
         <div id="schedule-grid" class="loading">Loading schedule…</div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          Recurring jobs
+          <button type="button" class="btn btn-primary btn-sm" onclick="openRecurringModal(null)">Add schedule</button>
+        </div>
+        <p style="font-size:.82rem;color:var(--muted);margin:-.35rem 0 .85rem">Weekly: pick weekday (Mon–Sun). Monthly: pick day-of-month (1–28). Preview shows the next five generated dates (not saved as jobs).</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Description</th><th>Cadence</th><th>Start</th><th>Repeat</th><th>Property</th><th>Customer</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="recurring-rules-tbody">
+              <tr><td colspan="8" class="loading">Loading recurring rules…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -549,6 +647,17 @@
         <label>Property Address</label>
         <input type="text" id="nc-address" placeholder="14 Garden Street, Auckland">
       </div>
+      <div class="field">
+        <label>Agreed pricing</label>
+        <select id="nc-price-type">
+          <option value="hourly">Hourly rate</option>
+          <option value="fixed" selected>Price per job</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Amount ($)</label>
+        <input type="number" id="nc-price-amount" placeholder="Leave blank if not set" step="0.01" min="0">
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-new-customer')">Cancel</button>
@@ -583,6 +692,17 @@
         <label>Tags</label>
         <input type="text" id="ec-tags" placeholder="e.g. residential, quarterly (comma-separated)">
       </div>
+      <div class="field">
+        <label>Agreed pricing</label>
+        <select id="ec-price-type">
+          <option value="hourly">Hourly rate</option>
+          <option value="fixed">Price per job</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Amount ($)</label>
+        <input type="number" id="ec-price-amount" placeholder="Leave blank if not set" step="0.01" min="0">
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-edit-customer')">Cancel</button>
@@ -616,6 +736,127 @@
   </div>
 </div>
 
+<!-- Add / edit plant listing -->
+<div class="modal-backdrop" id="modal-plant">
+  <div class="modal">
+    <div class="modal-title" id="plant-modal-title">Add listing</div>
+    <input type="hidden" id="pl-id">
+    <input type="hidden" id="pl-kind">
+    <div class="form-grid">
+      <div class="field" style="grid-column:1/-1">
+        <label>Plant name *</label>
+        <input type="text" id="pl-name" placeholder="e.g. Hebe, cherry tomatoes">
+      </div>
+      <div class="field">
+        <label>Quantity / form</label>
+        <input type="text" id="pl-qty" placeholder="e.g. 3 pots, 1 tray">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="pl-status"></select>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Notes</label>
+        <textarea id="pl-notes" placeholder="Timing, swap ideas, pickup notes…"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-plant')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="savePlantListing()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Map & directions -->
+<div class="modal-backdrop" id="modal-map">
+  <div class="modal modal--wide">
+    <div class="modal-title">Map &amp; directions</div>
+    <p id="map-modal-context" style="font-size:.85rem;color:var(--muted);margin:-.35rem 0 .75rem"></p>
+    <div class="field" style="margin-bottom:.75rem">
+      <label>Address</label>
+      <div id="map-modal-address" style="padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:.4rem;font-size:.9rem;background:var(--green-50);line-height:1.4"></div>
+    </div>
+    <div style="margin-bottom:1rem;border-radius:.5rem;overflow:hidden;border:1px solid var(--border);height:220px;background:var(--bg)">
+      <iframe id="map-embed" title="Map preview" style="width:100%;height:100%;border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.25rem">
+      <button type="button" class="btn btn-primary btn-sm" onclick="mapOpenGoogle()">Open in Google Maps</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="mapOpenGoogleDirections()">Directions</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="mapOpenOSM()">OpenStreetMap</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="mapCopyAddress()">Copy address</button>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);margin:0 0 .75rem">Preview uses Google embed; external links open in a new tab.</p>
+    <div class="modal-actions" style="margin-top:0">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-map')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recurring job schedule -->
+<div class="modal-backdrop" id="modal-recurring">
+  <div class="modal">
+    <div class="modal-title" id="recurring-modal-title">Add recurring schedule</div>
+    <input type="hidden" id="rr-id">
+    <div class="form-grid">
+      <div class="field" style="grid-column:1/-1">
+        <label>Customer (optional)</label>
+        <select id="rr-customer"><option value="">—</option></select>
+      </div>
+      <div class="field">
+        <label>Property ID *</label>
+        <input type="number" id="rr-property-id" min="1" step="1" placeholder="e.g. 201">
+      </div>
+      <div class="field">
+        <label>Cadence *</label>
+        <select id="rr-frequency" onchange="toggleRecurringCadenceUI()">
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="field" id="rr-week-wrap">
+        <label>Weekday</label>
+        <select id="rr-day-of-week">
+          <option value="0">Monday</option>
+          <option value="1">Tuesday</option>
+          <option value="2">Wednesday</option>
+          <option value="3">Thursday</option>
+          <option value="4">Friday</option>
+          <option value="5">Saturday</option>
+          <option value="6">Sunday</option>
+        </select>
+      </div>
+      <div class="field" id="rr-month-wrap" style="display:none">
+        <label>Day of month (1–28)</label>
+        <input type="number" id="rr-day-of-month" min="1" max="28" step="1" value="1">
+      </div>
+      <div class="field">
+        <label>Start date</label>
+        <input type="date" id="rr-start-date">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Description / notes *</label>
+        <textarea id="rr-description" placeholder="e.g. Fortnightly lawn & edges"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-recurring')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveRecurringRule()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recurring preview dates -->
+<div class="modal-backdrop" id="modal-recurring-preview">
+  <div class="modal">
+    <div class="modal-title">Upcoming generated dates</div>
+    <p style="font-size:.85rem;color:var(--muted);margin:-.35rem 0 .75rem" id="recurring-preview-context"></p>
+    <ul id="recurring-preview-list" style="list-style:none;font-size:.9rem;line-height:1.6"></ul>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-recurring-preview')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div id="toast"></div>
 
@@ -626,6 +867,8 @@ let _jobs = [];
 let _quotes = [];
 let _invoices = [];
 let _editCustomerSnapshot = null;
+let _plantListings = [];
+let _recurringRules = [];
 
 // ══ NAVIGATION ══
 function nav(page) {
@@ -634,11 +877,12 @@ function nav(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.querySelector('[data-page="' + page + '"]').classList.add('active');
   document.getElementById('page-title').textContent = {
-    dashboard: 'Dashboard', jobs: 'Jobs', customers: 'Customers',
+    dashboard: 'Dashboard', jobs: 'Jobs', customers: 'Customers', plants: 'Plant exchange',
     schedule: 'Schedule', quotes: 'Quotes', invoices: 'Invoices', settings: 'Settings'
   }[page];
   if (page === 'jobs') loadJobs();
   if (page === 'customers') loadCustomers();
+  if (page === 'plants') loadPlantListings();
   if (page === 'schedule') loadSchedule();
   if (page === 'quotes') loadQuotes();
   if (page === 'invoices') loadInvoices();
@@ -647,6 +891,13 @@ function nav(page) {
 
 document.querySelectorAll('[data-page]').forEach(a => {
   a.addEventListener('click', e => { e.preventDefault(); nav(a.dataset.page); });
+});
+
+document.querySelectorAll('#plants-subnav [data-plants-tab]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    setPlantsTab(a.dataset.plantsTab);
+  });
 });
 
 // ══ TOAST ══
@@ -660,10 +911,74 @@ function toast(msg, type = 'ok') {
 
 // ══ MODAL ══
 function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'modal-map') {
+    const frame = document.getElementById('map-embed');
+    if (frame) frame.src = 'about:blank';
+  }
+}
 document.querySelectorAll('.modal-backdrop').forEach(b => {
-  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
+  b.addEventListener('click', e => { if (e.target === b && b.id) closeModal(b.id); });
 });
+
+// ══ MAP & LOCATION ══
+let _mapAddress = '';
+
+function jobPropertyAddress(j) {
+  return String(j.property?.address || j.property_info?.address || '').trim();
+}
+
+function openMapModal(address, contextLabel) {
+  const addr = String(address || '').trim();
+  if (!addr) {
+    toast('No address to show on the map', 'error');
+    return;
+  }
+  _mapAddress = addr;
+  const ctx = document.getElementById('map-modal-context');
+  ctx.textContent = contextLabel || '';
+  ctx.style.display = contextLabel ? 'block' : 'none';
+  document.getElementById('map-modal-address').textContent = addr;
+  document.getElementById('map-embed').src =
+    'https://maps.google.com/maps?q=' + encodeURIComponent(addr) + '&output=embed';
+  openModal('modal-map');
+}
+
+function openMapForCustomer(id) {
+  const c = _customers.find(x => Number(x.id) === Number(id));
+  if (!c) { toast('Customer not found', 'error'); return; }
+  const addr = customerPrimaryAddress(c).trim();
+  openMapModal(addr, 'Customer — ' + (c.name || ''));
+}
+
+function openMapForJob(id) {
+  const j = _jobs.find(x => Number(x.job_id) === Number(id));
+  if (!j) { toast('Job not found', 'error'); return; }
+  const addr = jobPropertyAddress(j);
+  openMapModal(addr, 'Job #' + id + (j.customer?.name ? ' — ' + j.customer.name : ''));
+}
+
+function mapOpenGoogle() {
+  window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(_mapAddress), '_blank', 'noopener,noreferrer');
+}
+
+function mapOpenGoogleDirections() {
+  window.open('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(_mapAddress), '_blank', 'noopener,noreferrer');
+}
+
+function mapOpenOSM() {
+  window.open('https://www.openstreetmap.org/search?query=' + encodeURIComponent(_mapAddress), '_blank', 'noopener,noreferrer');
+}
+
+async function mapCopyAddress() {
+  try {
+    await navigator.clipboard.writeText(_mapAddress);
+    toast('Address copied');
+  } catch (e) {
+    toast('Could not copy address', 'error');
+  }
+}
 
 // ══ BADGES ══
 function statusBadge(s) {
@@ -732,12 +1047,15 @@ async function loadDashboard() {
     jobsList.innerHTML = '<li><div class="empty"><p>No jobs yet</p></div></li>';
   } else {
     jobsList.innerHTML = jobArr.slice(0, 5).map(j => `
-      <li>
-        <div>
+      <li style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
           <div class="ql-name">${esc(j.description || 'Job #' + j.job_id)}</div>
           <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}</div>
         </div>
-        ${statusBadge(j.workflow_status)}
+        <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+          ${jobPropertyAddress(j) ? `<button type="button" class="btn btn-outline btn-sm" onclick="openMapForJob(${j.job_id})">Map</button>` : ''}
+          ${statusBadge(j.workflow_status)}
+        </div>
       </li>`).join('');
   }
 
@@ -747,12 +1065,15 @@ async function loadDashboard() {
     custList.innerHTML = '<li><div class="empty"><p>No customers yet</p></div></li>';
   } else {
     custList.innerHTML = custArr.slice(0, 5).map(c => `
-      <li>
-        <div>
+      <li style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
           <div class="ql-name">${esc(c.name)}</div>
           <div class="ql-sub">${esc(c.email || '')}</div>
         </div>
-        <span style="font-size:.78rem;color:var(--muted)">${esc(c.phone || '')}</span>
+        <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+          ${customerPrimaryAddress(c).trim() ? `<button type="button" class="btn btn-outline btn-sm" onclick="openMapForCustomer(${c.id})">Map</button>` : ''}
+          <span style="font-size:.78rem;color:var(--muted)">${esc(c.phone || '')}</span>
+        </div>
       </li>`).join('');
   }
 }
@@ -780,7 +1101,10 @@ function renderJobs(arr) {
       <td>${esc(j.property?.address || j.property_info?.address || '—')}</td>
       <td>${esc((j.description || '').slice(0, 60))}</td>
       <td>${statusBadge(j.workflow_status)}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="viewJob(${j.job_id})">View</button></td>
+      <td style="white-space:nowrap">
+        <button type="button" class="btn btn-outline btn-sm" onclick="openMapForJob(${j.job_id})">Map</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="viewJob(${j.job_id})">View</button>
+      </td>
     </tr>`).join('');
 }
 
@@ -825,7 +1149,7 @@ async function loadCustomers() {
 function renderCustomers(arr) {
   const tbody = document.getElementById('customers-tbody');
   if (!arr.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       <p>No customers yet. Add your first customer!</p></div></td></tr>`;
     return;
@@ -837,7 +1161,9 @@ function renderCustomers(arr) {
       <td>${esc(c.phone || '—')}</td>
       <td>${esc((c.properties && c.properties[0] && c.properties[0].address) || c.property_address || '—')}</td>
       <td>${(c.tags || []).map(t => `<span class="badge badge-green">${esc(t)}</span>`).join(' ') || '—'}</td>
+      <td>${(() => { const lbl = customerPriceAgreedLabel(c); return lbl ? '<strong>' + esc(lbl) + '</strong>' : '—'; })()}</td>
       <td style="white-space:nowrap">
+        <button type="button" class="btn btn-outline btn-sm" onclick="openMapForCustomer(${c.id})">Map</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditCustomer(${c.id})">Edit</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="viewCustomer(${c.id})">View</button>
       </td>
@@ -847,7 +1173,8 @@ function renderCustomers(arr) {
 function filterCustomers(q) {
   const f = _customers.filter(c =>
     (c.name || '').toLowerCase().includes(q.toLowerCase()) ||
-    (c.email || '').toLowerCase().includes(q.toLowerCase())
+    (c.email || '').toLowerCase().includes(q.toLowerCase()) ||
+    (customerPriceAgreedLabel(c) || '').toLowerCase().includes(q.toLowerCase())
   );
   renderCustomers(f);
 }
@@ -867,6 +1194,15 @@ function customerTagsSortKey(tags) {
   return JSON.stringify([...(tags || [])].map(t => String(t).trim()).filter(Boolean).sort());
 }
 
+function customerPriceAgreedLabel(c) {
+  const amt = c.price_agreed_amount;
+  const typ = (c.price_agreed_type || '').toLowerCase();
+  if (amt == null || amt === '' || Number.isNaN(Number(amt))) return '';
+  const n = Number(amt);
+  if (typ === 'hourly') return '$' + n.toFixed(2) + '/hr';
+  return '$' + n.toFixed(2) + ' / job';
+}
+
 function openEditCustomer(id) {
   const c = _customers.find(x => Number(x.id) === Number(id));
   if (!c) { toast('Customer not found', 'error'); return; }
@@ -876,12 +1212,19 @@ function openEditCustomer(id) {
   document.getElementById('ec-phone').value = c.phone || '';
   document.getElementById('ec-address').value = customerPrimaryAddress(c);
   document.getElementById('ec-tags').value = (c.tags || []).join(', ');
+  const pa = c.price_agreed_amount;
+  const pt = (c.price_agreed_type || 'fixed').toLowerCase() === 'hourly' ? 'hourly' : 'fixed';
+  document.getElementById('ec-price-type').value = pt;
+  document.getElementById('ec-price-amount').value =
+    pa != null && pa !== '' && !Number.isNaN(Number(pa)) ? String(Number(pa)) : '';
   _editCustomerSnapshot = {
     name: (c.name || '').trim(),
     email: (c.email || '').trim(),
     phone: (c.phone || '').trim(),
     property_address: customerPrimaryAddress(c).trim(),
-    tagsKey: customerTagsSortKey(c.tags)
+    tagsKey: customerTagsSortKey(c.tags),
+    price_agreed_type: pt,
+    price_agreed_amount: pa != null && pa !== '' && !Number.isNaN(Number(pa)) ? Number(pa) : null
   };
   openModal('modal-edit-customer');
 }
@@ -893,6 +1236,13 @@ async function saveEditCustomer() {
   const phone = document.getElementById('ec-phone').value.trim();
   const property_address = document.getElementById('ec-address').value.trim();
   const tagsNext = parseCustomerTagsInput(document.getElementById('ec-tags').value);
+  const pType = document.getElementById('ec-price-type').value;
+  const priceRaw = document.getElementById('ec-price-amount').value.trim();
+  let priceNext = null;
+  if (priceRaw !== '') {
+    priceNext = Number(priceRaw);
+    if (Number.isNaN(priceNext) || priceNext < 0) { toast('Enter a valid amount or leave blank', 'error'); return; }
+  }
   if (!_editCustomerSnapshot) { toast('Nothing to save', 'error'); return; }
   const patch = {};
   if (name !== _editCustomerSnapshot.name) patch.name = name;
@@ -900,6 +1250,16 @@ async function saveEditCustomer() {
   if (phone !== _editCustomerSnapshot.phone) patch.phone = phone;
   if (property_address !== _editCustomerSnapshot.property_address) patch.property_address = property_address;
   if (customerTagsSortKey(tagsNext) !== _editCustomerSnapshot.tagsKey) patch.tags = tagsNext;
+  const snapA = _editCustomerSnapshot.price_agreed_amount;
+  const snapT = _editCustomerSnapshot.price_agreed_type;
+  if (priceNext === null) {
+    if (snapA != null) {
+      patch.price_agreed_amount = null;
+    }
+  } else if (priceNext !== snapA || pType !== snapT) {
+    patch.price_agreed_type = pType;
+    patch.price_agreed_amount = priceNext;
+  }
   if (!Object.keys(patch).length) { toast('No changes to save'); return; }
   try {
     const r = await fetch('/api/v1/customers/' + encodeURIComponent(id), {
@@ -923,16 +1283,26 @@ async function createCustomer() {
   const email = document.getElementById('nc-email').value.trim();
   const phone = document.getElementById('nc-phone').value.trim();
   const address = document.getElementById('nc-address').value.trim();
+  const priceRaw = document.getElementById('nc-price-amount').value.trim();
+  const pType = document.getElementById('nc-price-type').value;
   if (!name || !email) { toast('Name and email are required', 'error'); return; }
+  const body = { name, email, phone: phone || undefined, property_address: address || undefined };
+  if (priceRaw !== '') {
+    const n = Number(priceRaw);
+    if (Number.isNaN(n) || n < 0) { toast('Enter a valid amount or leave blank', 'error'); return; }
+    body.price_agreed_type = pType;
+    body.price_agreed_amount = n;
+  }
   const r = await api('/api/v1/customers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, phone: phone || undefined, property_address: address || undefined })
+    body: JSON.stringify(body)
   });
   if (r) {
     toast('Customer added');
     closeModal('modal-new-customer');
-    ['nc-name','nc-email','nc-phone','nc-address'].forEach(id => document.getElementById(id).value = '');
+    ['nc-name','nc-email','nc-phone','nc-address','nc-price-amount'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('nc-price-type').value = 'fixed';
     loadCustomers();
     loadDashboard();
   } else {
@@ -949,6 +1319,152 @@ function populateCustomerDropdowns() {
   });
 }
 
+// ══ PLANT EXCHANGE ══
+function setPlantsTab(tab) {
+  document.querySelectorAll('#plants-subnav [data-plants-tab]').forEach(a => {
+    a.classList.toggle('active', a.dataset.plantsTab === tab);
+  });
+  document.querySelectorAll('.plants-pane').forEach(p => {
+    p.classList.toggle('active', p.id === 'plants-pane-' + tab);
+  });
+}
+
+function plantListingStatusBadge(kind, st) {
+  const s = (st || '').toLowerCase();
+  if (kind === 'wanted') {
+    if (s === 'fulfilled') return '<span class="badge badge-green">Fulfilled</span>';
+    return '<span class="badge badge-blue">Seeking</span>';
+  }
+  const map = { available: 'badge-green', reserved: 'badge-amber', given: 'badge-gray' };
+  const label = { available: 'Available', reserved: 'Reserved', given: 'Given away' };
+  const cls = map[s] || 'badge-gray';
+  return `<span class="badge ${cls}">${esc(label[s] || st || '—')}</span>`;
+}
+
+function fillPlantStatusSelect(kind) {
+  const sel = document.getElementById('pl-status');
+  const opts = kind === 'wanted'
+    ? [['open', 'Seeking'], ['fulfilled', 'Fulfilled']]
+    : [['available', 'Available'], ['reserved', 'Reserved'], ['given', 'Given away']];
+  sel.innerHTML = opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('');
+}
+
+function plantsFiltered(kind) {
+  const inputId = kind === 'wanted' ? 'plant-search-wanted' : 'plant-search-giveaway';
+  const q = (document.getElementById(inputId).value || '').toLowerCase();
+  return _plantListings.filter(l => {
+    if (l.kind !== kind) return false;
+    if (!q) return true;
+    return (l.plant_name || '').toLowerCase().includes(q) ||
+      (l.notes || '').toLowerCase().includes(q) ||
+      (l.quantity || '').toLowerCase().includes(q);
+  });
+}
+
+function renderPlantTables() {
+  ['wanted', 'giveaway'].forEach(kind => {
+    const tbody = document.getElementById('plants-' + kind + '-tbody');
+    const rows = plantsFiltered(kind);
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22c4-4 8-8 8-14a8 8 0 0 0-16 0c0 6 4 10 8 14z"/></svg>
+        <p>${kind === 'wanted' ? 'No plants on the wanted list yet.' : 'Nothing listed to give away yet.'}</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(l => {
+      const note = (l.notes || '');
+      const noteShort = note.length > 90 ? note.slice(0, 90) + '…' : note;
+      return `<tr>
+        <td><strong>${esc(l.plant_name)}</strong></td>
+        <td>${esc(l.quantity || '—')}</td>
+        <td>${esc(noteShort || '—')}</td>
+        <td>${plantListingStatusBadge(kind, l.status)}</td>
+        <td style="white-space:nowrap">
+          <button type="button" class="btn btn-outline btn-sm" onclick="openPlantModal('${kind}',${l.id})">Edit</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="removePlantListing(${l.id})">Remove</button>
+        </td>
+      </tr>`;
+    }).join('');
+  });
+}
+
+async function loadPlantListings() {
+  const data = await api('/api/v1/plant-listings');
+  _plantListings = data?.listings ?? data ?? [];
+  renderPlantTables();
+}
+
+function openPlantModal(kind, id) {
+  document.getElementById('pl-kind').value = kind;
+  fillPlantStatusSelect(kind);
+  const idEl = document.getElementById('pl-id');
+  const title = document.getElementById('plant-modal-title');
+  if (id == null) {
+    idEl.value = '';
+    title.textContent = kind === 'wanted' ? 'Add — Plants wanted' : 'Add — Plants to give away';
+    document.getElementById('pl-name').value = '';
+    document.getElementById('pl-qty').value = '';
+    document.getElementById('pl-notes').value = '';
+    document.getElementById('pl-status').value = kind === 'wanted' ? 'open' : 'available';
+  } else {
+    const l = _plantListings.find(x => Number(x.id) === Number(id));
+    if (!l) { toast('Listing not found', 'error'); return; }
+    idEl.value = l.id;
+    title.textContent = kind === 'wanted' ? 'Edit — Plants wanted' : 'Edit — Plants to give away';
+    document.getElementById('pl-name').value = l.plant_name || '';
+    document.getElementById('pl-qty').value = l.quantity || '';
+    document.getElementById('pl-notes').value = l.notes || '';
+    document.getElementById('pl-status').value = (l.status || '').toLowerCase() ||
+      (kind === 'wanted' ? 'open' : 'available');
+  }
+  openModal('modal-plant');
+}
+
+async function savePlantListing() {
+  const id = document.getElementById('pl-id').value;
+  const kind = document.getElementById('pl-kind').value;
+  const name = document.getElementById('pl-name').value.trim();
+  const qty = document.getElementById('pl-qty').value.trim();
+  const notes = document.getElementById('pl-notes').value.trim();
+  const st = document.getElementById('pl-status').value;
+  if (!name) { toast('Plant name is required', 'error'); return; }
+  try {
+    if (!id) {
+      const r = await fetch('/api/v1/plant-listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind, plant_name: name, quantity: qty, notes, status: st })
+      });
+      if (!r.ok) throw new Error(r.statusText);
+      toast('Listing added');
+    } else {
+      const r = await fetch('/api/v1/plant-listings/' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plant_name: name, quantity: qty, notes, status: st })
+      });
+      if (!r.ok) throw new Error(r.statusText);
+      toast('Listing updated');
+    }
+    closeModal('modal-plant');
+    loadPlantListings();
+  } catch (e) {
+    toast('Could not save listing', 'error');
+  }
+}
+
+async function removePlantListing(id) {
+  if (!confirm('Remove this plant listing?')) return;
+  try {
+    const r = await fetch('/api/v1/plant-listings/' + encodeURIComponent(id), { method: 'DELETE' });
+    if (!r.ok) throw new Error(r.statusText);
+    toast('Listing removed');
+    loadPlantListings();
+  } catch (e) {
+    toast('Could not remove listing', 'error');
+  }
+}
+
 // ══ SCHEDULE ══
 async function loadSchedule() {
   const data = await api('/api/v1/schedule');
@@ -958,9 +1474,8 @@ async function loadSchedule() {
     el.innerHTML = `<div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <p>No scheduled items this week</p></div>`;
-    return;
-  }
-  el.innerHTML = `<div class="table-wrap"><table>
+  } else {
+    el.innerHTML = `<div class="table-wrap"><table>
     <thead><tr><th>Date/Time</th><th>Job</th><th>Customer</th><th>Status</th></tr></thead>
     <tbody>${slots.map(s => `<tr>
       <td>${esc(s.scheduled_at || s.date || '—')}</td>
@@ -969,6 +1484,197 @@ async function loadSchedule() {
       <td>${statusBadge(s.status)}</td>
     </tr>`).join('')}</tbody>
   </table></div>`;
+  }
+  await loadRecurringRules();
+}
+
+function recurringCustomerName(customerId) {
+  if (customerId == null) return '—';
+  const c = _customers.find(x => Number(x.id) === Number(customerId));
+  return c ? c.name : '#' + customerId;
+}
+
+function recurringRepeatLabel(r) {
+  const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  if ((r.cadence || 'weekly') === 'monthly') return 'Day ' + (r.day_of_month || 1) + ' / month';
+  return names[r.day_of_week || 0] + ' / week';
+}
+
+function toggleRecurringCadenceUI() {
+  const freq = document.getElementById('rr-frequency').value;
+  document.getElementById('rr-week-wrap').style.display = freq === 'weekly' ? '' : 'none';
+  document.getElementById('rr-month-wrap').style.display = freq === 'monthly' ? '' : 'none';
+}
+
+async function loadRecurringRules() {
+  if (!_customers.length) await loadCustomers();
+  const data = await api('/api/v1/recurring-job-rules');
+  _recurringRules = data?.rules ?? data ?? [];
+  renderRecurringRulesTable();
+}
+
+function renderRecurringRulesTable() {
+  const tbody = document.getElementById('recurring-rules-tbody');
+  if (!_recurringRules.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <p>No recurring schedules yet</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _recurringRules.map(r => {
+    const paused = !!r.paused;
+    const cad = (r.cadence || 'weekly') === 'monthly' ? 'Monthly' : 'Weekly';
+    return `<tr>
+      <td><strong>${esc(r.description || '—')}</strong></td>
+      <td>${esc(cad)}</td>
+      <td>${esc(r.start_date || '—')}</td>
+      <td>${esc(recurringRepeatLabel(r))}</td>
+      <td>${r.property_id != null ? '#' + esc(String(r.property_id)) : '—'}</td>
+      <td>${esc(recurringCustomerName(r.customer_id))}</td>
+      <td>${paused ? '<span class="badge badge-gray">Paused</span>' : '<span class="badge badge-green">Active</span>'}</td>
+      <td style="white-space:nowrap">
+        <button type="button" class="btn btn-outline btn-sm" onclick="previewRecurringRule(${r.id})">Preview</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleRecurringPause(${r.id},${paused ? 'true' : 'false'})">${paused ? 'Resume' : 'Pause'}</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openRecurringModal(${r.id})">Edit</button>
+        ${Number(r.id) === 1 ? '' : `<button type="button" class="btn btn-outline btn-sm" onclick="deleteRecurringRule(${r.id})">Delete</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function populateRecurringCustomerSelect(selectedId) {
+  const sel = document.getElementById('rr-customer');
+  const cur = selectedId != null ? String(selectedId) : '';
+  sel.innerHTML = '<option value="">—</option>' +
+    _customers.map(c => `<option value="${c.id}" ${String(c.id) === cur ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+}
+
+function openRecurringModal(id) {
+  populateRecurringCustomerSelect(null);
+  document.getElementById('rr-id').value = id != null ? id : '';
+  document.getElementById('recurring-modal-title').textContent = id != null ? 'Edit recurring schedule' : 'Add recurring schedule';
+  const today = new Date().toISOString().slice(0, 10);
+  if (id == null) {
+    document.getElementById('rr-property-id').value = '';
+    document.getElementById('rr-frequency').value = 'weekly';
+    document.getElementById('rr-day-of-week').value = '0';
+    document.getElementById('rr-day-of-month').value = '1';
+    document.getElementById('rr-start-date').value = today;
+    document.getElementById('rr-description').value = '';
+    document.getElementById('rr-customer').value = '';
+  } else {
+    const r = _recurringRules.find(x => Number(x.id) === Number(id));
+    if (!r) { toast('Rule not found', 'error'); return; }
+    populateRecurringCustomerSelect(r.customer_id);
+    document.getElementById('rr-property-id').value = r.property_id != null ? r.property_id : '';
+    document.getElementById('rr-frequency').value = (r.cadence || 'weekly') === 'monthly' ? 'monthly' : 'weekly';
+    document.getElementById('rr-day-of-week').value = String(r.day_of_week != null ? r.day_of_week : 0);
+    document.getElementById('rr-day-of-month').value = String(r.day_of_month != null ? r.day_of_month : 1);
+    document.getElementById('rr-start-date').value = (r.start_date || '').slice(0, 10) || today;
+    document.getElementById('rr-description').value = r.description || r.notes || '';
+  }
+  toggleRecurringCadenceUI();
+  openModal('modal-recurring');
+}
+
+async function saveRecurringRule() {
+  const id = document.getElementById('rr-id').value;
+  const propertyId = Number(document.getElementById('rr-property-id').value);
+  const freq = document.getElementById('rr-frequency').value;
+  const desc = document.getElementById('rr-description').value.trim();
+  const start = document.getElementById('rr-start-date').value;
+  const cust = document.getElementById('rr-customer').value;
+  const dow = Number(document.getElementById('rr-day-of-week').value);
+  const dom = Number(document.getElementById('rr-day-of-month').value) || 1;
+  if (!propertyId || propertyId < 1) { toast('Property ID is required', 'error'); return; }
+  if (!desc) { toast('Description is required', 'error'); return; }
+  try {
+    if (!id) {
+      const body = {
+        property_id: propertyId,
+        frequency: freq,
+        start_date: start || undefined,
+        notes: desc,
+        day_of_week: dow,
+        day_of_month: dom
+      };
+      if (cust) body.customer_id = Number(cust);
+      const r = await fetch('/api/v1/recurring-job-rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(r.statusText);
+      toast('Schedule created');
+    } else {
+      const r = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: desc,
+          cadence: freq,
+          start_date: start || null,
+          day_of_week: dow,
+          day_of_month: dom,
+          property_id: propertyId,
+          customer_id: cust ? Number(cust) : null
+        })
+      });
+      if (!r.ok) throw new Error(r.statusText);
+      toast('Schedule updated');
+    }
+    closeModal('modal-recurring');
+    await loadRecurringRules();
+  } catch (e) {
+    toast('Could not save schedule', 'error');
+  }
+}
+
+async function toggleRecurringPause(id, currentlyPaused) {
+  try {
+    const r = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(id) + '/pause', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pause: !currentlyPaused })
+    });
+    if (!r.ok) throw new Error(r.statusText);
+    toast(!currentlyPaused ? 'Schedule paused' : 'Schedule resumed');
+    await loadRecurringRules();
+  } catch (e) {
+    toast('Could not update pause state', 'error');
+  }
+}
+
+async function deleteRecurringRule(id) {
+  if (Number(id) === 1) { toast('Cannot delete the sample rule', 'error'); return; }
+  if (!confirm('Delete this recurring schedule?')) return;
+  try {
+    const r = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(id), { method: 'DELETE' });
+    if (!r.ok) throw new Error(r.statusText);
+    toast('Schedule deleted');
+    await loadRecurringRules();
+  } catch (e) {
+    toast('Could not delete schedule', 'error');
+  }
+}
+
+async function previewRecurringRule(id) {
+  try {
+    const r = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(id) + '/preview', { method: 'POST' });
+    if (!r.ok) throw new Error(r.statusText);
+    const rows = await r.json();
+    const rule = _recurringRules.find(x => Number(x.id) === Number(id));
+    document.getElementById('recurring-preview-context').textContent =
+      (rule ? esc(rule.description || '') + ' · ' : '') + 'Next ' + rows.length + ' occurrence(s)';
+    document.getElementById('recurring-preview-list').innerHTML = rows.map((row, i) => {
+      const d = row.generated_for_date;
+      const label = typeof d === 'string' ? d.replace('T', ' ').slice(0, 16) : String(d);
+      return `<li style="padding:.35rem 0;border-bottom:1px solid var(--border)"><strong>${i + 1}.</strong> ${esc(label)}</li>`;
+    }).join('');
+    openModal('modal-recurring-preview');
+  } catch (e) {
+    toast('Could not load preview', 'error');
+  }
 }
 
 // ══ QUOTES ══

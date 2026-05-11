@@ -1296,6 +1296,8 @@ class Customer:
     notes: str | None = None
     tags: list[str] = field(default_factory=list)
     archived: bool = False
+    price_agreed_type: str | None = None
+    price_agreed_amount: float | None = None
 
 
 @dataclass
@@ -1305,6 +1307,18 @@ class CustomerProperty:
     id: int
     address: str
     customer_id: int
+
+
+@dataclass
+class PlantListing:
+    """Plant wanted or plant to give away for crew / client exchange lists."""
+
+    id: int
+    kind: str
+    plant_name: str
+    quantity: str = ""
+    notes: str = ""
+    status: str = ""
 
 
 @dataclass(frozen=True)
