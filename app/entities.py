@@ -289,10 +289,12 @@ class Invoice:
     due_date: date
     jobs: list[int] = field(default_factory=list)
     custom_items: list[dict] = field(default_factory=list)
+    notes: str | None = None
+    customer_name: str | None = None
 
     def __post_init__(self) -> None:
-        if self.amount <= 0:
-            raise ValueError("Amount must be positive")
+        if self.amount < 0:
+            raise ValueError("Amount must be non-negative")
         if self.issue_date >= self.due_date:
             raise ValueError("Issue date must be before due date")
 
@@ -1444,6 +1446,9 @@ class Quote:
     notes: str | None = None
     valid_until: str | None = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    customer_name: str | None = None
+    line_items: list[dict] = field(default_factory=list)
+    discount_ex_gst: float = 0.0
 
     def __post_init__(self) -> None:
         if isinstance(self.title, str):
@@ -1454,6 +1459,14 @@ class Quote:
             self.notes = self.notes.strip() or None
         if isinstance(self.valid_until, str):
             self.valid_until = self.valid_until.strip() or None
+        if isinstance(self.customer_name, str):
+            self.customer_name = self.customer_name.strip() or None
+        if not isinstance(self.line_items, list):
+            raise TypeError("line_items must be a list")
+        if not isinstance(self.discount_ex_gst, (int, float)) or isinstance(self.discount_ex_gst, bool):
+            raise TypeError("discount_ex_gst must be a number")
+        if float(self.discount_ex_gst) < 0:
+            raise ValueError("discount_ex_gst must be non-negative")
 
         for name in ("quote_id", "customer_id", "property_id"):
             v = getattr(self, name)
@@ -1554,6 +1567,7 @@ class AuditLog:
 class DashboardMetrics(BaseModel):
     """Owner dashboard summary returned by GET /api/v1/dashboard."""
 
+    jobs_scheduled_today: int = 0
     jobs: list[Any] = Field(default_factory=list)
     revenue: int = 0
     overdue_invoices: list[Any] = Field(default_factory=list)

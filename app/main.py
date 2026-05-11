@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -13,20 +13,46 @@ from app.jobs_api import router as jobs_router
 from app.schedule_api import router as schedule_router
 from app.quotes_api import router as quotes_router
 from app.invoices_api import router as invoices_router
-from app.settings_api import router as settings_router
+from app.settings_api import ensure_default_settings, router as settings_router
 from app.weather_api import router as weather_router
 from app.service_templates_api import router as service_templates_router
 from app.audit_api import router as audit_router
 from app.recurring_jobs_api import router as recurring_jobs_router
 from app.reporting_api import router as reporting_router
 from app.plant_exchange_api import router as plant_exchange_router
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from app.entities import DashboardMetrics
+from app.database import (
+    SessionLocal,
+    apply_sqlite_migrations,
+    engine,
+    Base,
+    ensure_demo_invoice_if_empty,
+    seed_database_if_empty,
+    get_db,
+)
+from app.models import Job as JobORM
+from app.nz_time import nz_calendar_date_from_stored, nz_today
 
 _APP_INDEX = Path(__file__).resolve().parent / "static" / "index.html"
 
 
+def _workflow_cancelled(status: str | None) -> bool:
+    s = (status or "").strip().lower()
+    return s in ("cancelled", "canceled")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    db = SessionLocal()
+    try:
+        seed_database_if_empty(db)
+        ensure_default_settings(db)
+        ensure_demo_invoice_if_empty(db)
+    finally:
+        db.close()
     yield
 
 
@@ -55,6 +81,16 @@ app.include_router(recurring_jobs_router)
 app.include_router(reporting_router)
 app.include_router(plant_exchange_router)
 
+Base.metadata.create_all(bind=engine)
+apply_sqlite_migrations(engine)
+_startup_db = SessionLocal()
+try:
+    seed_database_if_empty(_startup_db)
+    ensure_default_settings(_startup_db)
+    ensure_demo_invoice_if_empty(_startup_db)
+finally:
+    _startup_db.close()
+
 
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon() -> RedirectResponse:
@@ -70,5 +106,12 @@ def root() -> str:
 
 
 @app.get("/api/v1/dashboard", response_model=DashboardMetrics)
-def get_dashboard() -> DashboardMetrics:
-    return DashboardMetrics()
+def get_dashboard(db: Session = Depends(get_db)) -> DashboardMetrics:
+    today = nz_today()
+    jobs_today = 0
+    for row in db.scalars(select(JobORM).where(JobORM.scheduled_date.isnot(None))).all():
+        if _workflow_cancelled(row.workflow_status):
+            continue
+        if nz_calendar_date_from_stored(row.scheduled_date) == today:
+            jobs_today += 1
+    return DashboardMetrics(jobs_scheduled_today=jobs_today)

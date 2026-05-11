@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Any
 
 from fastapi import APIRouter, Query
 
 router = APIRouter(tags=["audit"])
+
+_NZ = ZoneInfo("Pacific/Auckland")
 
 _LOGS: list[dict[str, Any]] = [
     {"entity": "Customer", "actor": "Admin", "action": "Update", "date": "2023-10-05"},
@@ -25,7 +28,7 @@ def append_audit_log(
     actor_user_id: int = 0,
 ) -> dict[str, Any]:
     """Append a structured audit row (in-memory) for mutating API calls."""
-    created = datetime.now(timezone.utc)
+    created = datetime.now(_NZ)
     actor_label = str(actor_user_id) if actor_user_id else "system"
     entry: dict[str, Any] = {
         "action": action,

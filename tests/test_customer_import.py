@@ -4,14 +4,23 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-import app.customer_api as customer_api
+from app.database import SessionLocal
 from app.main import app
+from app.models import Customer as CustomerORM
 
 client = TestClient(app)
 
 
+def _customer_count() -> int:
+    db = SessionLocal()
+    try:
+        return db.query(CustomerORM).count()
+    finally:
+        db.close()
+
+
 def test_import_customers(tmp_path: Path) -> None:
-    before_ids = len(customer_api._customers)
+    before_ids = _customer_count()
     csv_path = tmp_path / "customers.csv"
     csv_path.write_text(
         "name,email,phone,address\n"
@@ -28,5 +37,10 @@ def test_import_customers(tmp_path: Path) -> None:
         "status": "success",
         "message": "Customers and properties imported successfully.",
     }
-    assert len(customer_api._customers) == before_ids + 1
-    assert any(c.email == "import@example.com" for c in customer_api._customers.values())
+    assert _customer_count() == before_ids + 1
+    db = SessionLocal()
+    try:
+        emails = [r.email for r in db.query(CustomerORM).all()]
+    finally:
+        db.close()
+    assert "import@example.com" in emails

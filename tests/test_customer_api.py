@@ -190,6 +190,8 @@ def test_archive_customer() -> None:
     assert response.json() == {"message": "Customer archived successfully"}
     gone = client.get(f"/api/v1/customers/{customer_id}")
     assert gone.status_code == 404
+    listed = client.get("/api/v1/customers").json()["customers"]
+    assert all(int(c["id"]) != int(customer_id) for c in listed)
 
 
 def test_delete_customer_retention_blocks_archive() -> None:

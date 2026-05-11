@@ -243,8 +243,8 @@
     }
     .subnav a:hover { color: var(--text); border-color: var(--green-400); }
     .subnav a.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
-    .plants-pane { display: none; }
-    .plants-pane.active { display: block; }
+    .plants-pane, .jobs-pane { display: none; }
+    .plants-pane.active, .jobs-pane.active { display: block; }
     .page-lead { font-size: .9rem; color: var(--muted); margin: -.5rem 0 1rem; line-height: 1.45; }
 
     @media (max-width: 640px) {
@@ -271,8 +271,8 @@
       Dashboard
     </a>
     <a href="#" data-page="jobs">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-      Jobs
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 14h2M9 18h6"/></svg>
+      Jobs & schedule
     </a>
     <a href="#" data-page="customers">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -281,10 +281,6 @@
     <a href="#" data-page="plants">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c4-4 8-8 8-14a8 8 0 0 0-16 0c0 6 4 10 8 14z"/><path d="M12 2v4"/><path d="M8 10h8"/></svg>
       Plant exchange
-    </a>
-    <a href="#" data-page="schedule">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Schedule
     </a>
     <a href="#" data-page="quotes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -347,7 +343,7 @@
         <div class="card">
           <div class="card-title">
             Upcoming Jobs
-            <button class="btn btn-outline btn-sm" onclick="nav('jobs')">View all</button>
+            <button class="btn btn-outline btn-sm" onclick="nav('jobs'); setJobsTab('all');">View all</button>
           </div>
           <ul class="quick-list" id="dash-jobs">
             <li class="loading">Loading…</li>
@@ -365,9 +361,10 @@
       </div>
     </div>
 
-    <!-- ══ JOBS PAGE ══ -->
+    <!-- ══ JOBS & SCHEDULE PAGE ══ -->
     <div id="page-jobs" class="page">
-      <div class="page-title">Jobs</div>
+      <div class="page-title">Jobs & schedule</div>
+      <p class="page-lead">This week’s roster, your full job list, and recurring rules — together so you are not jumping between screens.</p>
       <div class="toolbar">
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -378,23 +375,66 @@
           New Job
         </button>
       </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Customer</th>
-                <th>Property</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="jobs-tbody">
-              <tr><td colspan="6" class="loading">Loading jobs…</td></tr>
-            </tbody>
-          </table>
+
+      <div class="subnav" id="jobs-subnav">
+        <a href="#" class="active" data-jobs-tab="week">This week</a>
+        <a href="#" data-jobs-tab="all">All jobs</a>
+        <a href="#" data-jobs-tab="recurring">Recurring</a>
+      </div>
+
+      <div id="jobs-pane-week" class="jobs-pane active">
+        <div class="card">
+          <div class="card-title">What’s on this week</div>
+          <p style="font-size:.82rem;color:var(--muted);margin:-.35rem 0 .75rem;line-height:1.45">
+            Jobs with a scheduled date in the current week (Mon–Sun, <strong>New Zealand time</strong>) are listed first. Jobs without a date appear under <strong>No date yet</strong> — add a date from job details when you can.
+          </p>
+          <div id="schedule-grid" class="loading">Loading schedule…</div>
+        </div>
+      </div>
+
+      <div id="jobs-pane-all" class="jobs-pane">
+        <div class="card">
+          <div class="card-title">All jobs</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>When</th>
+                  <th>Customer</th>
+                  <th>Property</th>
+                  <th>Description</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="jobs-tbody">
+                <tr><td colspan="7" class="loading">Loading jobs…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="jobs-pane-recurring" class="jobs-pane">
+        <div class="card">
+          <div class="card-title">
+            Recurring jobs
+            <button type="button" class="btn btn-primary btn-sm" onclick="openRecurringModal(null)">Add schedule</button>
+          </div>
+          <p style="font-size:.82rem;color:var(--muted);margin:-.35rem 0 .85rem;line-height:1.45">
+            Weekly: pick weekday (Mon–Sun). Monthly: pick day-of-month (1–28). Preview shows the next five generated dates (not saved as jobs until you convert them).
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Description</th><th>Cadence</th><th>Start</th><th>Repeat</th><th>Property</th><th>Customer</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody id="recurring-rules-tbody">
+                <tr><td colspan="8" class="loading">Loading recurring rules…</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -494,38 +534,11 @@
       </div>
     </div>
 
-    <!-- ══ SCHEDULE PAGE ══ -->
-    <div id="page-schedule" class="page">
-      <div class="page-title">Schedule</div>
-      <p class="page-lead">This week’s roster plus recurring job rules (weekly or monthly cadence).</p>
-      <div class="card">
-        <div class="card-title">Weekly View</div>
-        <div id="schedule-grid" class="loading">Loading schedule…</div>
-      </div>
-      <div class="card">
-        <div class="card-title">
-          Recurring jobs
-          <button type="button" class="btn btn-primary btn-sm" onclick="openRecurringModal(null)">Add schedule</button>
-        </div>
-        <p style="font-size:.82rem;color:var(--muted);margin:-.35rem 0 .85rem">Weekly: pick weekday (Mon–Sun). Monthly: pick day-of-month (1–28). Preview shows the next five generated dates (not saved as jobs).</p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Description</th><th>Cadence</th><th>Start</th><th>Repeat</th><th>Property</th><th>Customer</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody id="recurring-rules-tbody">
-              <tr><td colspan="8" class="loading">Loading recurring rules…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <!-- ══ QUOTES PAGE ══ -->
     <div id="page-quotes" class="page">
       <div class="page-title">Quotes</div>
       <div class="toolbar">
-        <button class="btn btn-primary" onclick="openModal('modal-new-quote')">
+        <button class="btn btn-primary" onclick="openNewQuoteModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New Quote
         </button>
@@ -534,7 +547,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>#</th><th>Customer</th><th>Services</th><th>Total</th><th>Status</th><th>Date</th><th></th></tr>
+              <tr><th>#</th><th>Customer</th><th>Title / notes</th><th>Total (inc GST)</th><th>Status</th><th>Date</th><th></th></tr>
             </thead>
             <tbody id="quotes-tbody">
               <tr><td colspan="7" class="loading">Loading quotes…</td></tr>
@@ -547,6 +560,12 @@
     <!-- ══ INVOICES PAGE ══ -->
     <div id="page-invoices" class="page">
       <div class="page-title">Invoices</div>
+      <div class="toolbar">
+        <button type="button" class="btn btn-primary" onclick="openNewInvoiceModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Invoice
+        </button>
+      </div>
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -613,6 +632,11 @@
         <select id="nj-status">
           <option>Scheduled</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
         </select>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Visit date &amp; time <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+        <input type="datetime-local" id="nj-datetime" step="300" placeholder="e.g. tomorrow 9:00">
+        <span style="font-size:.78rem;color:var(--muted)">Shown on the schedule and job list. Leave blank to plan the date later.</span>
       </div>
       <div class="field" style="grid-column:1/-1">
         <label>Description</label>
@@ -713,25 +737,249 @@
 
 <!-- New Quote -->
 <div class="modal-backdrop" id="modal-new-quote">
-  <div class="modal">
+  <div class="modal" style="max-width:640px">
     <div class="modal-title">New Quote</div>
+    <p style="font-size:.82rem;color:var(--muted);margin:-.25rem 0 .75rem">All amounts in NZD. GST is validated at 15% when line items are used.</p>
     <div class="form-grid">
       <div class="field">
         <label>Customer</label>
         <select id="nq-customer"><option value="">Select customer…</option></select>
       </div>
       <div class="field">
-        <label>Total Amount ($)</label>
-        <input type="number" id="nq-amount" placeholder="0.00" step="0.01">
+        <label>Property ID</label>
+        <input type="number" id="nq-property-id" value="1" min="1" step="1">
       </div>
       <div class="field" style="grid-column:1/-1">
-        <label>Services / Notes</label>
-        <textarea id="nq-notes" placeholder="Lawn mowing, hedge trimming, garden tidy…"></textarea>
+        <label>Title</label>
+        <input type="text" id="nq-title" placeholder="e.g. Spring garden package">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="nq-status">
+          <option value="draft">draft</option>
+          <option value="sent">sent</option>
+          <option value="accepted">accepted</option>
+          <option value="declined">declined</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valid until</label>
+        <input type="date" id="nq-valid-until">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Notes</label>
+        <textarea id="nq-notes" placeholder="Scope, access, materials"></textarea>
+      </div>
+      <div class="field">
+        <label>Subtotal (ex GST)</label>
+        <input type="number" id="nq-sub-ex" step="0.01" min="0" value="0">
+      </div>
+      <div class="field">
+        <label>GST (15%)</label>
+        <input type="number" id="nq-gst" step="0.01" min="0" value="0">
+      </div>
+      <div class="field">
+        <label>Total (inc GST)</label>
+        <input type="number" id="nq-total" step="0.01" min="0" value="0">
+      </div>
+      <div class="field">
+        <label>Discount (ex GST)</label>
+        <input type="number" id="nq-discount" step="0.01" min="0" value="0">
+      </div>
+    </div>
+    <div style="margin:.75rem 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.35rem">
+        <strong style="font-size:.88rem">Line items (ex GST)</strong>
+        <span style="display:flex;gap:.35rem;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline btn-sm" onclick="recalcQuoteGst('nq')">Recalculate from lines</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addQuoteLineRow('nq-lines-tbody')">Add line</button>
+        </span>
+      </div>
+      <div class="table-wrap">
+        <table style="font-size:.86rem">
+          <thead><tr><th>Kind</th><th>Description</th><th>Amount ex GST</th><th></th></tr></thead>
+          <tbody id="nq-lines-tbody"></tbody>
+        </table>
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('modal-new-quote')">Cancel</button>
-      <button class="btn btn-primary" onclick="createQuote()">Create Quote</button>
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-new-quote')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="createQuote()">Create Quote</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Quote -->
+<div class="modal-backdrop" id="modal-edit-quote">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-title">Edit Quote</div>
+    <input type="hidden" id="eq-quote-id" value="">
+    <div class="form-grid">
+      <div class="field">
+        <label>Customer</label>
+        <select id="eq-customer"><option value="">Select customer…</option></select>
+      </div>
+      <div class="field">
+        <label>Property ID</label>
+        <input type="number" id="eq-property-id" min="1" step="1" value="1">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Title</label>
+        <input type="text" id="eq-title" placeholder="Title">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="eq-status">
+          <option value="draft">draft</option>
+          <option value="sent">sent</option>
+          <option value="accepted">accepted</option>
+          <option value="declined">declined</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valid until</label>
+        <input type="date" id="eq-valid-until">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Notes</label>
+        <textarea id="eq-notes"></textarea>
+      </div>
+      <div class="field">
+        <label>Subtotal (ex GST)</label>
+        <input type="number" id="eq-sub-ex" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>GST (15%)</label>
+        <input type="number" id="eq-gst" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>Total (inc GST)</label>
+        <input type="number" id="eq-total" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>Discount (ex GST)</label>
+        <input type="number" id="eq-discount" step="0.01" min="0" value="0">
+      </div>
+    </div>
+    <div style="margin:.75rem 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.35rem">
+        <strong style="font-size:.88rem">Line items (ex GST)</strong>
+        <span style="display:flex;gap:.35rem;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline btn-sm" onclick="recalcQuoteGst('eq')">Recalculate from lines</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addQuoteLineRow('eq-lines-tbody')">Add line</button>
+        </span>
+      </div>
+      <div class="table-wrap">
+        <table style="font-size:.86rem">
+          <thead><tr><th>Kind</th><th>Description</th><th>Amount ex GST</th><th></th></tr></thead>
+          <tbody id="eq-lines-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-edit-quote')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveEditQuote()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Invoice -->
+<div class="modal-backdrop" id="modal-new-invoice">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">New Invoice</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Customer</label>
+        <select id="ni-customer"><option value="">Select customer…</option></select>
+      </div>
+      <div class="field">
+        <label>Amount ($)</label>
+        <input type="number" id="ni-amount" step="0.01" min="0" value="0">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="ni-status">
+          <option value="issued">issued</option>
+          <option value="paid">paid</option>
+          <option value="overdue">overdue</option>
+          <option value="draft">draft</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Issue date</label>
+        <input type="date" id="ni-issue">
+      </div>
+      <div class="field">
+        <label>Due date</label>
+        <input type="date" id="ni-due">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Notes</label>
+        <textarea id="ni-notes" placeholder="Payment terms, reference"></textarea>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Job IDs (comma-separated)</label>
+        <input type="text" id="ni-jobs" placeholder="e.g. 1, 2">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Custom items (JSON array)</label>
+        <textarea id="ni-custom-items" placeholder="[]" style="min-height:4rem;font-family:ui-monospace,monospace;font-size:.8rem"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-new-invoice')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="createInvoice()">Create Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Invoice -->
+<div class="modal-backdrop" id="modal-edit-invoice">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">Edit Invoice</div>
+    <input type="hidden" id="ei-invoice-id" value="">
+    <div class="form-grid">
+      <div class="field">
+        <label>Customer</label>
+        <select id="ei-customer"><option value="">Select customer…</option></select>
+      </div>
+      <div class="field">
+        <label>Amount ($)</label>
+        <input type="number" id="ei-amount" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="ei-status">
+          <option value="issued">issued</option>
+          <option value="paid">paid</option>
+          <option value="overdue">overdue</option>
+          <option value="draft">draft</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Issue date</label>
+        <input type="date" id="ei-issue">
+      </div>
+      <div class="field">
+        <label>Due date</label>
+        <input type="date" id="ei-due">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Notes</label>
+        <textarea id="ei-notes"></textarea>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Job IDs (comma-separated)</label>
+        <input type="text" id="ei-jobs">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Custom items (JSON array)</label>
+        <textarea id="ei-custom-items" style="min-height:4rem;font-family:ui-monospace,monospace;font-size:.8rem"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-edit-invoice')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveEditInvoice()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -869,6 +1117,7 @@ let _invoices = [];
 let _editCustomerSnapshot = null;
 let _plantListings = [];
 let _recurringRules = [];
+let _jobsActiveTab = 'week';
 
 // ══ NAVIGATION ══
 function nav(page) {
@@ -877,13 +1126,13 @@ function nav(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.querySelector('[data-page="' + page + '"]').classList.add('active');
   document.getElementById('page-title').textContent = {
-    dashboard: 'Dashboard', jobs: 'Jobs', customers: 'Customers', plants: 'Plant exchange',
-    schedule: 'Schedule', quotes: 'Quotes', invoices: 'Invoices', settings: 'Settings'
+    dashboard: 'Dashboard', jobs: 'Jobs & schedule', customers: 'Customers', plants: 'Plant exchange',
+    quotes: 'Quotes', invoices: 'Invoices', settings: 'Settings'
   }[page];
-  if (page === 'jobs') loadJobs();
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'jobs') loadWorkPage();
   if (page === 'customers') loadCustomers();
   if (page === 'plants') loadPlantListings();
-  if (page === 'schedule') loadSchedule();
   if (page === 'quotes') loadQuotes();
   if (page === 'invoices') loadInvoices();
   if (page === 'settings') loadSettings();
@@ -891,6 +1140,23 @@ function nav(page) {
 
 document.querySelectorAll('[data-page]').forEach(a => {
   a.addEventListener('click', e => { e.preventDefault(); nav(a.dataset.page); });
+});
+
+function setJobsTab(tab) {
+  _jobsActiveTab = tab;
+  document.querySelectorAll('#jobs-subnav [data-jobs-tab]').forEach(a => {
+    a.classList.toggle('active', a.dataset.jobsTab === tab);
+  });
+  document.querySelectorAll('#page-jobs .jobs-pane').forEach(p => {
+    p.classList.toggle('active', p.id === 'jobs-pane-' + tab);
+  });
+}
+
+document.querySelectorAll('#jobs-subnav [data-jobs-tab]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    setJobsTab(a.dataset.jobsTab);
+  });
 });
 
 document.querySelectorAll('#plants-subnav [data-plants-tab]').forEach(a => {
@@ -927,6 +1193,15 @@ let _mapAddress = '';
 
 function jobPropertyAddress(j) {
   return String(j.property?.address || j.property_info?.address || '').trim();
+}
+
+/** Format API `scheduled_date` (ISO string) for tables and lists. */
+function formatJobWhen(j) {
+  const raw = j && j.scheduled_date;
+  if (raw == null || raw === '') return '—';
+  const s = String(raw);
+  if (s.includes('T')) return s.replace('T', ' ').slice(0, 16);
+  return s.slice(0, 16);
 }
 
 function openMapModal(address, contextLabel) {
@@ -1050,10 +1325,11 @@ async function loadDashboard() {
       <li style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <div class="ql-name">${esc(j.description || 'Job #' + j.job_id)}</div>
-          <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}</div>
+          <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}${formatJobWhen(j) !== '—' ? ' · ' + esc(formatJobWhen(j)) : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
           ${jobPropertyAddress(j) ? `<button type="button" class="btn btn-outline btn-sm" onclick="openMapForJob(${j.job_id})">Map</button>` : ''}
+          <button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${j.job_id})">Remove</button>
           ${statusBadge(j.workflow_status)}
         </div>
       </li>`).join('');
@@ -1078,18 +1354,29 @@ async function loadDashboard() {
   }
 }
 
-// ══ JOBS ══
-async function loadJobs() {
-  const data = await api('/api/v1/jobs');
-  _jobs = data?.jobs ?? data ?? [];
+// ══ JOBS & SCHEDULE ══
+async function loadWorkPage() {
+  if (!_customers.length) await loadCustomers();
+  const [jobsData, schedData] = await Promise.all([
+    api('/api/v1/jobs'),
+    api('/api/v1/schedule'),
+  ]);
+  _jobs = jobsData?.jobs ?? jobsData ?? [];
+  renderWeekFromSchedule(schedData);
   renderJobs(_jobs);
+  await loadRecurringRules();
+  setJobsTab(_jobsActiveTab);
   populateCustomerDropdowns();
+}
+
+async function loadJobs() {
+  await loadWorkPage();
 }
 
 function renderJobs(arr) {
   const tbody = document.getElementById('jobs-tbody');
   if (!arr.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
       <p>No jobs found</p></div></td></tr>`;
     return;
@@ -1097,6 +1384,7 @@ function renderJobs(arr) {
   tbody.innerHTML = arr.map(j => `
     <tr>
       <td><strong>#${j.job_id}</strong></td>
+      <td style="white-space:nowrap;font-size:.86rem">${esc(formatJobWhen(j))}</td>
       <td>${esc(j.customer?.name || '—')}</td>
       <td>${esc(j.property?.address || j.property_info?.address || '—')}</td>
       <td>${esc((j.description || '').slice(0, 60))}</td>
@@ -1104,33 +1392,65 @@ function renderJobs(arr) {
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="openMapForJob(${j.job_id})">Map</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="viewJob(${j.job_id})">View</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${j.job_id})">Remove</button>
       </td>
     </tr>`).join('');
 }
 
 function filterJobs(q) {
+  const ql = (q || '').toLowerCase();
   const f = _jobs.filter(j =>
-    (j.description || '').toLowerCase().includes(q.toLowerCase()) ||
-    (j.customer?.name || '').toLowerCase().includes(q.toLowerCase())
+    (j.description || '').toLowerCase().includes(ql) ||
+    (j.customer?.name || '').toLowerCase().includes(ql) ||
+    String(formatJobWhen(j)).toLowerCase().includes(ql)
   );
   renderJobs(f);
 }
 
-function viewJob(id) { toast('Job #' + id + ' — detail view coming soon'); }
+function viewJob(id) {
+  const j = _jobs.find(x => Number(x.job_id) === Number(id));
+  const when = j ? formatJobWhen(j) : '—';
+  toast('Job #' + id + (when !== '—' ? ' · ' + when : '') + ' — detail view coming soon');
+}
+
+async function removeJob(jobId) {
+  if (jobId == null || Number.isNaN(Number(jobId))) return;
+  if (!confirm('Delete this job? It is removed from the schedule and job list.')) return;
+  try {
+    const r = await fetch('/api/v1/jobs/' + encodeURIComponent(jobId), { method: 'DELETE' });
+    if (!r.ok) throw new Error(await r.text());
+    toast('Job removed');
+    await loadWorkPage();
+    loadDashboard();
+  } catch (e) {
+    toast('Could not remove job', 'error');
+  }
+}
 
 async function createJob() {
   const desc = document.getElementById('nj-description').value.trim();
   const custId = document.getElementById('nj-customer').value;
   const status = document.getElementById('nj-status').value;
+  const dtEl = document.getElementById('nj-datetime');
+  const dtVal = dtEl && dtEl.value ? dtEl.value.trim() : '';
+  if (!custId) { toast('Please select a customer', 'error'); return; }
   if (!desc) { toast('Please enter a description', 'error'); return; }
+  const payload = {
+    description: desc,
+    customer_id: Number(custId),
+    workflow_status: status,
+  };
+  if (dtVal) payload.scheduled_date = dtVal.length === 16 ? dtVal + ':00' : dtVal;
   const r = await api('/api/v1/jobs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description: desc, customer_id: custId || undefined, workflow_status: status })
+    body: JSON.stringify(payload),
   });
   if (r) {
     toast('Job created');
     closeModal('modal-new-job');
+    document.getElementById('nj-description').value = '';
+    if (dtEl) dtEl.value = '';
     loadJobs();
     loadDashboard();
   } else {
@@ -1166,8 +1486,32 @@ function renderCustomers(arr) {
         <button type="button" class="btn btn-outline btn-sm" onclick="openMapForCustomer(${c.id})">Map</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditCustomer(${c.id})">Edit</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="viewCustomer(${c.id})">View</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="removeCustomer(${c.id})">Remove</button>
       </td>
     </tr>`).join('');
+}
+
+async function removeCustomer(id) {
+  if (!confirm('Remove this customer? They are archived and hidden from your lists. Existing jobs and invoices are not deleted.')) return;
+  try {
+    const r = await fetch('/api/v1/customers/' + encodeURIComponent(id), { method: 'DELETE' });
+    let detail = '';
+    try {
+      const j = await r.json();
+      detail = (j && j.detail) ? String(j.detail) : '';
+    } catch { /* empty */ }
+    if (r.status === 409) {
+      toast(detail || 'Cannot remove while retention rules apply', 'error');
+      return;
+    }
+    if (!r.ok) throw new Error(detail || r.statusText);
+    toast('Customer removed');
+    await loadCustomers();
+    loadDashboard();
+    try { await loadWorkPage(); } catch (e) { /* not on jobs page */ }
+  } catch (e) {
+    toast('Could not remove customer', 'error');
+  }
 }
 
 function filterCustomers(q) {
@@ -1311,8 +1655,9 @@ async function createCustomer() {
 }
 
 function populateCustomerDropdowns() {
-  ['nj-customer', 'nq-customer'].forEach(id => {
+  ['nj-customer', 'nq-customer', 'eq-customer', 'ni-customer', 'ei-customer'].forEach(id => {
     const sel = document.getElementById(id);
+    if (!sel) return;
     const cur = sel.value;
     sel.innerHTML = '<option value="">Select customer…</option>' +
       _customers.map(c => `<option value="${c.id}" ${c.id == cur ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
@@ -1465,27 +1810,63 @@ async function removePlantListing(id) {
   }
 }
 
-// ══ SCHEDULE ══
-async function loadSchedule() {
-  const data = await api('/api/v1/schedule');
+function renderWeekFromSchedule(data) {
   const el = document.getElementById('schedule-grid');
-  const slots = data?.slots ?? data ?? [];
-  if (!slots.length) {
-    el.innerHTML = `<div class="empty">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <p>No scheduled items this week</p></div>`;
-  } else {
-    el.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>Date/Time</th><th>Job</th><th>Customer</th><th>Status</th></tr></thead>
-    <tbody>${slots.map(s => `<tr>
-      <td>${esc(s.scheduled_at || s.date || '—')}</td>
-      <td>${esc(s.job_description || s.description || 'Job #' + s.job_id)}</td>
+  if (!el) return;
+  el.classList.remove('loading');
+  const slots = data?.slots ?? [];
+  const unsched = data?.unscheduled ?? [];
+  const range =
+    data?.week_start && data?.week_end_exclusive
+      ? `<p style="font-size:.82rem;color:var(--muted);margin:0 0 1rem">Week <strong>${esc(data.week_start)}</strong> → <strong>${esc(data.week_end_exclusive)}</strong> (${esc(data.timezone || 'Pacific/Auckland')})</p>`
+      : '';
+
+  function rowHtml(s) {
+    const when = s.scheduled_at || s.date || '—';
+    const label =
+      typeof when === 'string' && when.includes('T')
+        ? when.replace('T', ' ').slice(0, 16)
+        : esc(when);
+    const jid = s.job_id != null ? Number(s.job_id) : null;
+    return `<tr>
+      <td style="white-space:nowrap">${label}</td>
+      <td>${esc(s.job_description || s.description || (s.job_id != null ? 'Job #' + s.job_id : '—'))}</td>
       <td>${esc(s.customer_name || s.customer?.name || '—')}</td>
       <td>${statusBadge(s.status)}</td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
+      <td style="white-space:nowrap">
+        <button type="button" class="btn btn-outline btn-sm" onclick="viewJob(${Number(s.job_id)})">View</button>
+        ${jid != null && !Number.isNaN(jid) ? `<button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${jid})">Remove</button>` : ''}
+      </td>
+    </tr>`;
   }
-  await loadRecurringRules();
+
+  let body = range;
+  if (!slots.length && !unsched.length) {
+    body += `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <p>No jobs yet this week. Create a job and set a scheduled date, or open <strong>All jobs</strong> to see everything on the books.</p></div>`;
+    el.innerHTML = body;
+    return;
+  }
+
+  if (slots.length) {
+    body += `<h4 style="font-size:.88rem;font-weight:700;margin:0 0 .5rem;color:var(--green-900)">Dated this week</h4>
+      <div class="table-wrap"><table>
+      <thead><tr><th>When</th><th>Job</th><th>Customer</th><th>Status</th><th></th></tr></thead>
+      <tbody>${slots.map(rowHtml).join('')}</tbody></table></div>`;
+  } else {
+    body += `<p style="font-size:.85rem;color:var(--muted);margin:0 0 .75rem">No jobs with a date in this week. Open <strong>All jobs</strong> to review work, or add dates to jobs when you schedule crews.</p>`;
+  }
+
+  if (unsched.length) {
+    body += `<h4 style="font-size:.88rem;font-weight:700;margin:1.1rem 0 .5rem;color:var(--green-900)">No date yet</h4>
+      <p style="font-size:.82rem;color:var(--muted);margin:-.25rem 0 .5rem">These jobs are saved but do not have a scheduled time. Assign dates when you plan the route.</p>
+      <div class="table-wrap"><table>
+      <thead><tr><th>When</th><th>Job</th><th>Customer</th><th>Status</th><th></th></tr></thead>
+      <tbody>${unsched.map(rowHtml).join('')}</tbody></table></div>`;
+  }
+
+  el.innerHTML = body;
 }
 
 function recurringCustomerName(customerId) {
@@ -1678,6 +2059,105 @@ async function previewRecurringRule(id) {
 }
 
 // ══ QUOTES ══
+function roundMoney(n) {
+  return Math.round((Number(n) || 0) * 100) / 100;
+}
+
+function quoteLineKindsOptions(selected) {
+  const kinds = ['service', 'material', 'green_waste', 'labour'];
+  return kinds.map(k => `<option value="${k}" ${k === selected ? 'selected' : ''}>${esc(k)}</option>`).join('');
+}
+
+function addQuoteLineRow(tbodyId, item) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const tr = document.createElement('tr');
+  const kind = (item && item.kind) || 'service';
+  const desc = (item && item.description) || '';
+  const amt = item && item.amount_ex_gst != null ? item.amount_ex_gst : '';
+  tr.innerHTML = `
+    <td><select class="quote-line-kind">${quoteLineKindsOptions(kind)}</select></td>
+    <td><input type="text" class="quote-line-desc" value="${esc(desc)}" placeholder="Description"></td>
+    <td><input type="number" class="quote-line-amt" step="0.01" min="0" value="${amt === '' ? '' : esc(String(amt))}"></td>
+    <td><button type="button" class="btn btn-outline btn-sm" onclick="this.closest('tr').remove()">Remove</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function collectQuoteLines(tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return [];
+  const out = [];
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const kind = tr.querySelector('.quote-line-kind')?.value || 'service';
+    const description = (tr.querySelector('.quote-line-desc')?.value || '').trim();
+    const amount_ex_gst = roundMoney(tr.querySelector('.quote-line-amt')?.value);
+    if (!description) return;
+    out.push({ kind, description, amount_ex_gst });
+  });
+  return out;
+}
+
+function recalcQuoteGst(prefix) {
+  const lines = collectQuoteLines(prefix + '-lines-tbody');
+  const discount = roundMoney(document.getElementById(prefix + '-discount')?.value);
+  const sum = roundMoney(lines.reduce((s, li) => s + (Number(li.amount_ex_gst) || 0), 0));
+  const sub = roundMoney(Math.max(0, sum - discount));
+  const gst = roundMoney(sub * 0.15);
+  const total = roundMoney(sub + gst);
+  const subEl = document.getElementById(prefix + '-sub-ex');
+  const gstEl = document.getElementById(prefix + '-gst');
+  const totEl = document.getElementById(prefix + '-total');
+  if (subEl) subEl.value = sub;
+  if (gstEl) gstEl.value = gst;
+  if (totEl) totEl.value = total;
+}
+
+function buildQuotePayload(prefix) {
+  const customer_id = Number(document.getElementById(prefix + '-customer').value);
+  const property_id = Math.max(1, Number(document.getElementById(prefix + '-property-id').value) || 1);
+  const title = (document.getElementById(prefix + '-title').value || '').trim();
+  const status = (document.getElementById(prefix + '-status').value || 'draft').trim();
+  const valid_until = (document.getElementById(prefix + '-valid-until').value || '').trim() || null;
+  const notes = (document.getElementById(prefix + '-notes').value || '').trim() || null;
+  const subtotal_ex_gst = roundMoney(document.getElementById(prefix + '-sub-ex').value);
+  const gst_amount = roundMoney(document.getElementById(prefix + '-gst').value);
+  const total_inc_gst = roundMoney(document.getElementById(prefix + '-total').value);
+  const discount_ex_gst = roundMoney(document.getElementById(prefix + '-discount').value);
+  const line_items = collectQuoteLines(prefix + '-lines-tbody');
+  return {
+    quote: {
+      customer_id,
+      property_id,
+      title: title || (notes ? notes.slice(0, 200) : 'Quote'),
+      subtotal_ex_gst,
+      gst_amount,
+      total_inc_gst,
+      status,
+      notes,
+      valid_until,
+      line_items,
+      discount_ex_gst,
+    },
+  };
+}
+
+function openNewQuoteModal() {
+  populateCustomerDropdowns();
+  document.getElementById('nq-property-id').value = '1';
+  document.getElementById('nq-title').value = '';
+  document.getElementById('nq-status').value = 'draft';
+  document.getElementById('nq-valid-until').value = '';
+  document.getElementById('nq-notes').value = '';
+  document.getElementById('nq-sub-ex').value = '0';
+  document.getElementById('nq-gst').value = '0';
+  document.getElementById('nq-total').value = '0';
+  document.getElementById('nq-discount').value = '0';
+  const tb = document.getElementById('nq-lines-tbody');
+  tb.innerHTML = '';
+  addQuoteLineRow('nq-lines-tbody', null);
+  openModal('modal-new-quote');
+}
+
 async function loadQuotes() {
   const data = await api('/api/v1/quotes');
   _quotes = data?.quotes ?? data ?? [];
@@ -1688,39 +2168,153 @@ async function loadQuotes() {
       <p>No quotes yet</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = _quotes.map(q => `
+  tbody.innerHTML = _quotes.map(q => {
+    const qid = q.quote_id || q.id;
+    const titleNote = (q.title || q.notes || '').slice(0, 56);
+    const total = q.total_inc_gst != null ? q.total_inc_gst : (q.total || q.amount || 0);
+    return `
     <tr>
-      <td><strong>#${q.id || q.quote_id}</strong></td>
+      <td><strong>#${qid}</strong></td>
       <td>${esc(q.customer_name || q.customer?.name || '—')}</td>
-      <td>${esc((q.services || q.notes || '').slice(0, 50) || '—')}</td>
-      <td><strong>$${Number(q.total || q.amount || 0).toFixed(2)}</strong></td>
+      <td>${esc(titleNote || '—')}</td>
+      <td><strong>$${Number(total).toFixed(2)}</strong></td>
       <td>${statusBadge(q.status)}</td>
       <td>${esc(q.created_at?.split('T')[0] || q.date || '—')}</td>
-      <td><button class="btn btn-outline btn-sm">View</button></td>
-    </tr>`).join('');
+      <td style="white-space:nowrap">
+        <button type="button" class="btn btn-outline btn-sm" onclick="openEditQuoteModal(${qid})">Edit</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="removeQuote(${qid})">Remove</button>
+      </td>
+    </tr>`;
+  }).join('');
   populateCustomerDropdowns();
+}
+
+async function removeQuote(quoteId) {
+  if (!confirm('Delete this quote? This cannot be undone.')) return;
+  try {
+    const r = await fetch('/api/v1/quotes/' + encodeURIComponent(quoteId), { method: 'DELETE' });
+    if (!r.ok) throw new Error(await r.text());
+    toast('Quote removed');
+    loadQuotes();
+    loadDashboard();
+  } catch (e) {
+    toast('Could not remove quote', 'error');
+  }
 }
 
 async function createQuote() {
   const custId = document.getElementById('nq-customer').value;
-  const amount = document.getElementById('nq-amount').value;
-  const notes = document.getElementById('nq-notes').value.trim();
   if (!custId) { toast('Please select a customer', 'error'); return; }
+  const payload = buildQuotePayload('nq');
   const r = await api('/api/v1/quotes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ customer_id: Number(custId), total: Number(amount) || 0, services: notes, status: 'Draft' })
+    body: JSON.stringify(payload),
   });
   if (r) {
     toast('Quote created');
     closeModal('modal-new-quote');
     loadQuotes();
+    loadDashboard();
   } else {
-    toast('Could not create quote', 'error');
+    toast('Could not create quote (check amounts and GST)', 'error');
+  }
+}
+
+async function openEditQuoteModal(quoteId) {
+  populateCustomerDropdowns();
+  const res = await fetch('/api/v1/quotes/' + encodeURIComponent(quoteId));
+  if (!res.ok) { toast('Quote not found', 'error'); return; }
+  const data = await res.json();
+  const q = data.quote;
+  document.getElementById('eq-quote-id').value = String(q.quote_id || quoteId);
+  document.getElementById('eq-customer').value = String(q.customer_id || '');
+  document.getElementById('eq-property-id').value = String(q.property_id || 1);
+  document.getElementById('eq-title').value = q.title || '';
+  document.getElementById('eq-status').value = (q.status || 'draft').toLowerCase();
+  const vu = q.valid_until;
+  document.getElementById('eq-valid-until').value = vu && vu.length >= 10 ? vu.slice(0, 10) : (vu || '');
+  document.getElementById('eq-notes').value = q.notes || '';
+  document.getElementById('eq-sub-ex').value = String(q.subtotal_ex_gst ?? 0);
+  document.getElementById('eq-gst').value = String(q.gst_amount ?? 0);
+  document.getElementById('eq-total').value = String(q.total_inc_gst ?? 0);
+  document.getElementById('eq-discount').value = String(q.discount_ex_gst ?? 0);
+  const tb = document.getElementById('eq-lines-tbody');
+  tb.innerHTML = '';
+  const lis = q.line_items || [];
+  if (lis.length) lis.forEach(li => addQuoteLineRow('eq-lines-tbody', li));
+  else addQuoteLineRow('eq-lines-tbody', null);
+  openModal('modal-edit-quote');
+}
+
+async function saveEditQuote() {
+  const id = document.getElementById('eq-quote-id').value;
+  if (!id) return;
+  const payload = buildQuotePayload('eq').quote;
+  try {
+    const r = await fetch('/api/v1/quotes/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    toast('Quote updated');
+    closeModal('modal-edit-quote');
+    loadQuotes();
+    loadDashboard();
+  } catch (e) {
+    toast('Could not save quote', 'error');
   }
 }
 
 // ══ INVOICES ══
+function parseCommaInts(str) {
+  return String(str || '').split(/[\s,]+/).map(s => parseInt(s, 10)).filter(n => !Number.isNaN(n) && n > 0);
+}
+
+function parseCustomItemsJson(str) {
+  const raw = String(str || '').trim();
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+function isoDateLocal(d) {
+  if (!d) return '';
+  const x = new Date(d);
+  if (Number.isNaN(x.getTime())) return String(d).slice(0, 10);
+  const y = x.getFullYear();
+  const m = String(x.getMonth() + 1).padStart(2, '0');
+  const day = String(x.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function openNewInvoiceModal() {
+  populateCustomerDropdowns();
+  const t = new Date();
+  const y = t.getFullYear();
+  const m = String(t.getMonth() + 1).padStart(2, '0');
+  const d = String(t.getDate()).padStart(2, '0');
+  const today = `${y}-${m}-${d}`;
+  const due = new Date(t.getTime());
+  due.setDate(due.getDate() + 14);
+  const dy = due.getFullYear();
+  const dm = String(due.getMonth() + 1).padStart(2, '0');
+  const dd = String(due.getDate()).padStart(2, '0');
+  document.getElementById('ni-amount').value = '0';
+  document.getElementById('ni-status').value = 'issued';
+  document.getElementById('ni-issue').value = today;
+  document.getElementById('ni-due').value = `${dy}-${dm}-${dd}`;
+  document.getElementById('ni-notes').value = '';
+  document.getElementById('ni-jobs').value = '';
+  document.getElementById('ni-custom-items').value = '[]';
+  openModal('modal-new-invoice');
+}
+
 async function loadInvoices() {
   const data = await api('/api/v1/invoices');
   _invoices = data?.invoices ?? data ?? [];
@@ -1731,21 +2325,147 @@ async function loadInvoices() {
       <p>No invoices yet</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = _invoices.map(inv => `
+  tbody.innerHTML = _invoices.map(inv => {
+    const iid = inv.invoice_id || inv.id;
+    const dueRaw = inv.due_date;
+    const dueStr = typeof dueRaw === 'string' ? dueRaw.slice(0, 10) : (dueRaw && dueRaw.toString ? isoDateLocal(dueRaw) : '—');
+    const amt = inv.amount != null ? inv.amount : (inv.amount_due || inv.total || 0);
+    return `
     <tr>
-      <td><strong>#${inv.id || inv.invoice_id}</strong></td>
+      <td><strong>#${iid}</strong></td>
       <td>${esc(inv.customer_name || inv.customer?.name || '—')}</td>
-      <td><strong>$${Number(inv.amount_due || inv.total || 0).toFixed(2)}</strong></td>
+      <td><strong>$${Number(amt).toFixed(2)}</strong></td>
       <td>${statusBadge(inv.status)}</td>
-      <td>${esc(inv.due_date?.split('T')[0] || inv.due || '—')}</td>
-      <td><button class="btn btn-outline btn-sm">View</button></td>
-    </tr>`).join('');
+      <td>${esc(dueStr)}</td>
+      <td style="white-space:nowrap">
+        <button type="button" class="btn btn-outline btn-sm" onclick="openEditInvoiceModal(${iid})">Edit</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="removeInvoice(${iid})">Remove</button>
+      </td>
+    </tr>`;
+  }).join('');
+  populateCustomerDropdowns();
+}
+
+async function removeInvoice(invoiceId) {
+  if (!confirm('Delete this invoice and its payments? This cannot be undone.')) return;
+  try {
+    const r = await fetch('/api/v1/invoices/' + encodeURIComponent(invoiceId), { method: 'DELETE' });
+    if (!r.ok) throw new Error(await r.text());
+    toast('Invoice removed');
+    loadInvoices();
+    loadDashboard();
+  } catch (e) {
+    toast('Could not remove invoice', 'error');
+  }
+}
+
+async function createInvoice() {
+  const customer_id = Number(document.getElementById('ni-customer').value);
+  if (!customer_id) { toast('Please select a customer', 'error'); return; }
+  const body = {
+    customer_id,
+    amount: roundMoney(document.getElementById('ni-amount').value),
+    status: document.getElementById('ni-status').value,
+    issue_date: document.getElementById('ni-issue').value || undefined,
+    due_date: document.getElementById('ni-due').value || undefined,
+    notes: (document.getElementById('ni-notes').value || '').trim() || null,
+    jobs: parseCommaInts(document.getElementById('ni-jobs').value),
+    custom_items: parseCustomItemsJson(document.getElementById('ni-custom-items').value),
+  };
+  const r = await fetch('/api/v1/invoices', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (r.ok) {
+    toast('Invoice created');
+    closeModal('modal-new-invoice');
+    loadInvoices();
+    loadDashboard();
+  } else {
+    toast('Could not create invoice', 'error');
+  }
+}
+
+async function openEditInvoiceModal(invoiceId) {
+  populateCustomerDropdowns();
+  const res = await fetch('/api/v1/invoices/' + encodeURIComponent(invoiceId));
+  if (!res.ok) { toast('Invoice not found', 'error'); return; }
+  const data = await res.json();
+  const inv = data.invoice;
+  document.getElementById('ei-invoice-id').value = String(inv.invoice_id || invoiceId);
+  document.getElementById('ei-customer').value = String(inv.customer_id || '');
+  document.getElementById('ei-amount').value = String(inv.amount ?? 0);
+  document.getElementById('ei-status').value = (inv.status || 'issued').toLowerCase();
+  document.getElementById('ei-issue').value = isoDateLocal(inv.issue_date);
+  document.getElementById('ei-due').value = isoDateLocal(inv.due_date);
+  document.getElementById('ei-notes').value = inv.notes || '';
+  document.getElementById('ei-jobs').value = (inv.jobs || []).join(', ');
+  document.getElementById('ei-custom-items').value = JSON.stringify(inv.custom_items || [], null, 2);
+  openModal('modal-edit-invoice');
+}
+
+async function saveEditInvoice() {
+  const id = document.getElementById('ei-invoice-id').value;
+  if (!id) return;
+  const body = {
+    customer_id: Number(document.getElementById('ei-customer').value),
+    amount: roundMoney(document.getElementById('ei-amount').value),
+    status: document.getElementById('ei-status').value,
+    issue_date: document.getElementById('ei-issue').value || null,
+    due_date: document.getElementById('ei-due').value || null,
+    notes: (document.getElementById('ei-notes').value || '').trim() || null,
+    jobs: parseCommaInts(document.getElementById('ei-jobs').value),
+    custom_items: parseCustomItemsJson(document.getElementById('ei-custom-items').value),
+  };
+  try {
+    const r = await fetch('/api/v1/invoices/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    toast('Invoice updated');
+    closeModal('modal-edit-invoice');
+    loadInvoices();
+    loadDashboard();
+  } catch (e) {
+    toast('Could not save invoice', 'error');
+  }
 }
 
 // ══ SETTINGS ══
+/** Sidebar subtitle + browser tab title from saved business name (any page). */
+function applyBusinessNameToChrome(name) {
+  const el = document.getElementById('business-name');
+  if (!el) return;
+  const trimmed = String(name == null ? '' : name).trim();
+  if (trimmed) {
+    el.textContent = trimmed;
+    document.title = trimmed + ' — GreenOps';
+  } else {
+    el.textContent = 'Gardening Business';
+    document.title = 'GreenOps';
+  }
+}
+
+async function hydrateBusinessBranding() {
+  const res = await api('/api/v1/settings/business/name');
+  const raw = res?.setting?.current_value;
+  let name = raw == null ? '' : String(raw);
+  if (name.startsWith('"') && name.endsWith('"')) {
+    try { name = JSON.parse(name); } catch { /* keep as-is */ }
+  }
+  applyBusinessNameToChrome(name);
+}
+
 async function loadSettings() {
-  const [pricing] = await Promise.all([
-    api('/api/v1/settings/services/pricing_tiers')
+  const [pricing, nameRes, phoneRes, emailRes, regionRes] = await Promise.all([
+    api('/api/v1/settings/services/pricing_tiers'),
+    api('/api/v1/settings/business/name'),
+    api('/api/v1/settings/business/phone'),
+    api('/api/v1/settings/business/email'),
+    api('/api/v1/settings/business/region'),
   ]);
   const tiersEl = document.getElementById('pricing-tiers');
   const tiers = pricing?.setting?.current_value;
@@ -1756,14 +2476,37 @@ async function loadSettings() {
   } else {
     tiersEl.innerHTML = '<span class="badge badge-gray">Standard</span>';
   }
+  const bizName = (nameRes?.setting?.current_value ?? '').trim();
+  document.getElementById('set-business-name').value = bizName;
+  document.getElementById('set-phone').value = (phoneRes?.setting?.current_value ?? '').trim();
+  document.getElementById('set-email').value = (emailRes?.setting?.current_value ?? '').trim();
+  document.getElementById('set-region').value = (regionRes?.setting?.current_value ?? '').trim();
+  applyBusinessNameToChrome(bizName);
 }
 
 async function saveSettings() {
   const name = document.getElementById('set-business-name').value.trim();
-  if (name) {
-    document.getElementById('business-name').textContent = name;
-    document.title = name + ' — GreenOps';
+  const phone = document.getElementById('set-phone').value.trim();
+  const email = document.getElementById('set-email').value.trim();
+  const region = document.getElementById('set-region').value.trim();
+  const rows = [
+    ['business', 'name', name],
+    ['business', 'phone', phone],
+    ['business', 'email', email],
+    ['business', 'region', region],
+  ];
+  for (const [cat, key, val] of rows) {
+    const r = await fetch(`/api/v1/settings/${cat}/${key}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: val }),
+    });
+    if (!r.ok) {
+      toast('Could not save settings', 'error');
+      return;
+    }
   }
+  applyBusinessNameToChrome(name);
   toast('Settings saved');
 }
 
@@ -1774,6 +2517,7 @@ function esc(s) {
 
 // ══ INIT ══
 loadWeather();
+hydrateBusinessBranding();
 loadDashboard();
 </script>
 </body>

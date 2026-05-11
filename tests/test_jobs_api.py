@@ -24,6 +24,10 @@ class TestJobAPI(unittest.TestCase):
         response = self.client.get("/api/v1/jobs/9999")
         self.assertEqual(response.status_code, 404)
 
+    def test_delete_job_not_found(self) -> None:
+        response = self.client.delete("/api/v1/jobs/99999")
+        self.assertEqual(response.status_code, 404)
+
 
 def test_update_job_version_mismatch() -> None:
     with pytest.raises(ValueError, match="Version mismatch: Job has been modified by another user."):

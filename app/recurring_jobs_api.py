@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import calendar
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Literal, Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Body, HTTPException, status
 from pydantic import BaseModel, Field
 
 router = APIRouter(tags=["recurring-job-rules"])
+
+_NZ = ZoneInfo("Pacific/Auckland")
 
 _RULES: dict[int, dict[str, Any]] = {
     1: {
@@ -46,11 +49,13 @@ def _anchor_datetime(rule: dict[str, Any]) -> datetime:
         if raw:
             dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
+                dt = dt.replace(tzinfo=_NZ)
+            else:
+                dt = dt.astimezone(_NZ)
         else:
-            dt = datetime.now(timezone.utc)
+            dt = datetime.now(_NZ)
     except Exception:
-        dt = datetime.now(timezone.utc)
+        dt = datetime.now(_NZ)
     return dt.replace(hour=9, minute=0, second=0, microsecond=0)
 
 

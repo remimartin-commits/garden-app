@@ -33,3 +33,12 @@ def test_post_quote_then_get_by_id() -> None:
 
 def test_get_quote_not_found() -> None:
     assert client.get("/api/v1/quotes/99999").status_code == 404
+
+
+def test_delete_quote() -> None:
+    created = client.post("/api/v1/quotes", json=_sample_quote_payload())
+    assert created.status_code == 201
+    qid = created.json()["quote"]["quote_id"]
+    r = client.delete(f"/api/v1/quotes/{qid}")
+    assert r.status_code == 200
+    assert client.get(f"/api/v1/quotes/{qid}").status_code == 404

@@ -17,6 +17,8 @@ class TestDashboardEndpoint(unittest.TestCase):
         data = response.json()
         self.assertIn("jobs", data)
         self.assertIn("revenue", data)
+        self.assertIn("jobs_scheduled_today", data)
+        self.assertIsInstance(data["jobs_scheduled_today"], int)
         self.assertIn("overdue_invoices", data)
         self.assertIn("upcoming_work", data)
         self.assertIn("weather_risks", data)

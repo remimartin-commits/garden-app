@@ -14,8 +14,11 @@ class TestDashboard(unittest.TestCase):
     def test_get_dashboard(self) -> None:
         response = self.client.get("/api/v1/dashboard")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("jobs", response.json())
-        self.assertIn("revenue", response.json())
+        data = response.json()
+        self.assertIn("jobs", data)
+        self.assertIn("revenue", data)
+        self.assertIn("jobs_scheduled_today", data)
+        self.assertIsInstance(data["jobs_scheduled_today"], int)
 
 
 if __name__ == "__main__":
