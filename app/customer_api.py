@@ -26,11 +26,12 @@ class CustomerCreateRequest(BaseModel):
 
 
 class CustomerPatchRequest(BaseModel):
-    """Partial update for contact, billing, notes, or tags."""
+    """Partial update for contact, billing, notes, tags, or primary property address."""
 
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    property_address: Optional[str] = None
     contact_details: Optional[str] = None
     billing_details: Optional[str] = None
     notes: Optional[str] = None
@@ -58,6 +59,17 @@ def _get_active_customer(customer_id: int) -> Customer | None:
     if customer is None or customer.archived:
         return None
     return customer
+
+
+def _sync_primary_property_address(customer: Customer, address: str | None) -> None:
+    """Update or create the customer's first property row from a single address string."""
+    addr = (address or "").strip()
+    if customer.properties:
+        customer.properties[0].address = addr
+    elif addr:
+        customer.properties.append(
+            CustomerProperty(id=1, address=addr, customer_id=customer.id)
+        )
 
 
 @router.post("/api/v1/customers")
@@ -91,6 +103,8 @@ def patch_customer(customer_id: int, body: CustomerPatchRequest) -> Customer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 
     data = body.model_dump(exclude_unset=True)
+    if "property_address" in data:
+        _sync_primary_property_address(customer, data.pop("property_address"))
     for key, value in data.items():
         if key == "tags" and value is not None:
             customer.tags = list(value)
