@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+import unittest
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.jobs_api import update_job
+from app.main import app
+
+
+class TestJobAPI(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+
+    def test_get_job_valid_id(self) -> None:
+        response = self.client.get("/api/v1/jobs/1")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("property", data)
+        self.assertIn("customer", data)
+
+    def test_get_job_invalid_id(self) -> None:
+        response = self.client.get("/api/v1/jobs/9999")
+        self.assertEqual(response.status_code, 404)
+
+
+def test_update_job_version_mismatch() -> None:
+    with pytest.raises(ValueError, match="Version mismatch: Job has been modified by another user."):
+        update_job(job_id=1, job_data={}, expected_version=1)
+
+
+def test_post_job_complete_requires_idempotency_header() -> None:
+    client = TestClient(app)
+    body = {
+        "actual_duration_minutes": 30,
+        "checklist_results": [{"description": "Done", "completed": True}],
+        "material_line_items": [{"material_id": 1, "quantity": 1.0}],
+        "attachments": [],
+        "completed_at": "2025-01-01T12:00:00Z",
+        "system_status": "done",
+    }
+    r = client.post("/api/v1/jobs/1/complete", json=body)
+    assert r.status_code == 400
+
+
+def test_post_job_complete_idempotent_records_fields() -> None:
+    client = TestClient(app)
+    headers = {"Idempotency-Key": "task-79-key"}
+    body = {
+        "actual_duration_minutes": 45,
+        "checklist_results": [{"description": "Mow lawn", "completed": True}],
+        "material_line_items": [{"material_id": 2, "quantity": 3.5}],
+        "attachments": [{"filename": "after.jpg", "file_url": "https://example.test/after.jpg"}],
+        "completed_at": "2025-06-01T10:00:00Z",
+        "system_status": "done",
+    }
+    r1 = client.post("/api/v1/jobs/1/complete", json=body, headers=headers)
+    assert r1.status_code == 200
+    data = r1.json()
+    assert data['completion']['actual_duration_minutes'] == 45
+    assert data["completion"]["system_status"] == "done"
+    assert len(data["completion"]["checklist_results"]) == 1
+    assert len(data["completion"]["material_line_items"]) == 1
+
+    got = client.get("/api/v1/jobs/1").json()
+    assert got["system_status"] == "done"
+    assert got["completion"]["completed_at"] == "2025-06-01T10:00:00Z"
+
+    r2 = client.post("/api/v1/jobs/1/complete", json=body, headers=headers)
+    assert r2.status_code == 409
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Live progress — 20s window</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111827;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --ok: #22c55e;
+      --warn: #eab308;
+      --bad: #ef4444;
+      --c-pending: #94a3b8;
+      --c-running: #38bdf8;
+      --c-complete: #4ade80;
+      --c-review: #f97316;
+      --c-latency: #a78bfa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    h1 { font-size: 1.25rem; font-weight: 700; margin: 0 0 8px; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 20px;
+      margin-bottom: 10px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #0f172a;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .dot.live { background: var(--ok); box-shadow: 0 0 10px var(--ok); animation: pulse 1.2s ease-in-out infinite; }
+    .dot.halted {
+      background: var(--c-review);
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.55);
+      animation: none;
+    }
+    .dot.stale { background: var(--warn); }
+    .dot.dead { background: var(--bad); animation: none; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 220px;
+      border-radius: 8px;
+      background: #0f172a;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 12px; height: 4px; border-radius: 2px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; }
+    a { color: #7dd3fc; }
+    .snapshot { font-size: 0.75rem; color: var(--muted); max-height: 120px; overflow: auto; }
+    .warn {
+      background: #422006;
+      border: 1px solid #c2410c;
+      color: #fed7aa;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+    }
+    .warn strong { color: #fff; }
+    .feed {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      max-height: 140px;
+      overflow-y: auto;
+      border-top: 1px solid var(--border);
+      margin-top: 10px;
+      padding-top: 8px;
+      line-height: 1.45;
+    }
+    .feed .ok { color: #86efac; }
+    .feed .bad { color: #fca5a5; }
+    .code-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .code-head h2 { margin: 0; font-size: 1.05rem; font-weight: 650; }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+    .tabs button {
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 8px 14px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 6px 6px 0 0;
+    }
+    .tabs button:hover { color: var(--text); background: #1e293b; }
+    .tabs button.active {
+      color: #7dd3fc;
+      border-bottom-color: #38bdf8;
+      background: #0f172a;
+    }
+    .terminal-wrap {
+      border: 1px solid #30363d;
+      border-radius: 0 8px 8px 8px;
+      background: #0d1117;
+      overflow: hidden;
+    }
+    #codeStream {
+      margin: 0;
+      padding: 12px 14px;
+      min-height: 280px;
+      max-height: min(52vh, 520px);
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #c9d1d9;
+      white-space: pre-wrap;
+      word-break: break-word;
+      tab-size: 2;
+    }
+    #codeStream.flash { animation: codeflash 0.45s ease-out; }
+    @keyframes codeflash {
+      from { background: #1c2a3a; }
+      to { background: #0d1117; }
+    }
+    .code-note { font-size: 0.75rem; color: var(--muted); margin-top: 10px; line-height: 1.4; }
+    .rev { font-size: 0.72rem; color: #64748b; }
+    .coding-halt {
+      display: none;
+      margin: 10px 0 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #c2410c;
+      background: #431407;
+      color: #fed7aa;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .coding-halt strong { color: #fff; }
+    .terminal-wrap.halted {
+      box-shadow: inset 0 3px 0 0 #f97316;
+    }
+    #autonomyStepPill {
+      font-weight: 650;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    #autonomyStepPill.idle { background: #0f172a; color: var(--muted); }
+    #autonomyStepPill.live { background: #14532d; color: #86efac; border-color: #166534; }
+    #autonomyStepPill.halt { background: #431407; color: #fed7aa; border-color: #c2410c; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Live autonomy progress</h1>
+    <p class="sub">
+      Rolling window: <strong>20 seconds</strong> max. Polls <code class="mono">/autonomy/status</code> every 500ms.
+      <strong>Flat colored lines</strong> only mean task <em>counts</em> are steady — normal if autonomy is paused or blocked.
+      The <strong>cyan</strong> line is <code class="mono">tasks_running</code> from the server snapshot, not a progress bar for the model.
+      The <strong>green dot</strong> only means the HTTP poll succeeded. A thin blue bar at the very top of the browser panel is often the host app (Cursor), not this page.
+      The <strong>purple latency</strong> line should wiggle; this feed should scroll every poll.
+      <a href="/static/autonomy.html">← Autonomy dashboard</a>
+    </p>
+
+    <div id="fileWarn" class="warn" style="display:none">
+      <strong>Wrong URL.</strong> Open this page from the running server, not as a file:
+      <a href="http://127.0.0.1:8000/static/live-progress.html" style="color:#7dd3fc">http://127.0.0.1:8000/static/live-progress.html</a>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="pill" id="connPill">
+          <span class="dot" id="connDot"></span>
+          <span id="connText">Connecting…</span>
+        </div>
+        <div class="mono" id="latencyText"></div>
+        <div class="mono" id="windowText"></div>
+        <div class="mono" id="pollMeta"></div>
+      </div>
+      <canvas id="chart" width="900" height="220" aria-label="Task counts over last 20 seconds"></canvas>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--c-pending)"></i> pending</span>
+        <span><i class="swatch" style="background:var(--c-running)"></i> running</span>
+        <span><i class="swatch" style="background:var(--c-complete)"></i> complete</span>
+        <span><i class="swatch" style="background:var(--c-review)"></i> needs_review</span>
+        <span><i class="swatch" style="background:var(--c-latency)"></i> HTTP latency (ms, right scale)</span>
+      </div>
+      <div class="feed mono" id="feed" aria-live="polite"></div>
+    </div>
+
+    <div class="card">
+      <div class="code-head">
+        <h2>Live coding stream</h2>
+        <span id="autonomyStepPill" class="idle" title="Derived from /autonomy/live-code">—</span>
+        <span class="mono rev" id="codeMeta">—</span>
+      </div>
+      <div id="codingHaltBanner" class="coding-halt" role="status"></div>
+      <p class="code-note" id="codeNote"></p>
+      <div class="tabs" role="tablist">
+        <button type="button" class="active" data-tab="agent" role="tab" aria-selected="true">Agent output</button>
+        <button type="button" data-tab="verify" role="tab" aria-selected="false">Verification</button>
+        <button type="button" data-tab="prompt" role="tab" aria-selected="false">Prompt</button>
+      </div>
+      <div class="terminal-wrap">
+        <pre id="codeStream" aria-live="polite">Loading…</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="mono snapshot" id="snapshot"></div>
+    </div>
+  </div>
+
+  <script>
+    const WINDOW_MS = 20000;
+    const POLL_MS = 500;
+    const STALE_MS = 3000;
+    const FEED_MAX = 28;
+    const LIVE_CODE_MS = 650;
+
+    const samples = [];
+    const feedLines = [];
+
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+    let logicalW = 900;
+    const logicalH = 220;
+
+    if (window.location.protocol === "file:") {
+      document.getElementById("fileWarn").style.display = "block";
+    }
+
+    function prune() {
+      const cutoff = Date.now() - WINDOW_MS;
+      while (samples.length && samples[0].ts < cutoff) samples.shift();
+    }
+
+    let lastOkTime = 0;
+    let pollSeq = 0;
+    let pollLoopPending = false;
+
+    function pushFeed(ok, line) {
+      feedLines.push({ ok, line });
+      while (feedLines.length > FEED_MAX) feedLines.shift();
+      const el = document.getElementById("feed");
+      el.innerHTML = feedLines
+        .map((x) => `<div class="${x.ok ? "ok" : "bad"}">${escapeHtml(x.line)}</div>`)
+        .join("");
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function escapeHtml(s) {
+      return s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    async function pollOnce() {
+      const t0 = performance.now();
+      pollSeq += 1;
+      const seq = pollSeq;
+      let rec = { ts: Date.now(), ok: false };
+      try {
+        const r = await fetch("/autonomy/status", { cache: "no-store" });
+        rec.latencyMs = Math.round(performance.now() - t0);
+        rec.ok = r.ok;
+        if (r.ok) {
+          rec.data = await r.json();
+          lastOkTime = Date.now();
+          const d = rec.data;
+          const summary =
+            `pend=${d.tasks_pending ?? "?"} run=${d.tasks_running ?? "?"} ` +
+            `done=${d.tasks_complete ?? "?"} rev=${d.tasks_needs_review ?? "?"} ` +
+            `state=${d.status ?? "?"} ${d.paused ? "PAUSED" : ""}`;
+          pushFeed(true, `#${seq} +${rec.latencyMs}ms ${summary}`);
+        } else {
+          rec.httpStatus = r.status;
+          pushFeed(false, `#${seq} HTTP ${r.status}`);
+        }
+      } catch (e) {
+        rec.latencyMs = Math.round(performance.now() - t0);
+        rec.error = String(e.message || e);
+        pushFeed(false, `#${seq} ${rec.error}`);
+      }
+      samples.push(rec);
+      prune();
+      render();
+    }
+
+    function schedulePoll() {
+      if (pollLoopPending) return;
+      pollLoopPending = true;
+      queueMicrotask(async () => {
+        try {
+          await pollOnce();
+        } finally {
+          pollLoopPending = false;
+          setTimeout(schedulePoll, POLL_MS);
+        }
+      });
+    }
+
+    function render() {
+      const now = Date.now();
+      const seq = pollSeq;
+      const ageSinceOk = lastOkTime ? now - lastOkTime : Infinity;
+
+      const dot = document.getElementById("connDot");
+      const text = document.getElementById("connText");
+      const last = samples.filter((s) => s.ok && s.data).pop();
+      if (!samples.length || !lastOkTime) {
+        dot.className = "dot";
+        text.textContent = "No data yet";
+      } else if (ageSinceOk > STALE_MS) {
+        dot.className = "dot stale";
+        text.textContent = "Stale / unreachable";
+      } else {
+        const d = last && last.data ? last.data : null;
+        const st = d ? String(d.status || "").toLowerCase() : "";
+        const haltedConn =
+          d &&
+          (!!d.paused ||
+            st === "blocked" ||
+            st === "paused" ||
+            Number(d.tasks_needs_review) > 0);
+        if (haltedConn) {
+          dot.className = "dot halted";
+          text.textContent =
+            st === "blocked"
+              ? "HTTP ok · autonomy blocked"
+              : d.paused
+                ? "HTTP ok · paused"
+                : "HTTP ok · needs_review (halt pipeline)";
+        } else {
+          dot.className = "dot live";
+          text.textContent = "Live — server responding";
+        }
+      }
+
+      const latEl = document.getElementById("latencyText");
+      const winEl = document.getElementById("windowText");
+      const metaEl = document.getElementById("pollMeta");
+      if (last && last.latencyMs != null) {
+        latEl.textContent = `Last HTTP round-trip: ${last.latencyMs} ms`;
+      } else if (samples.length) {
+        const x = samples[samples.length - 1];
+        latEl.textContent = x.error ? `Error: ${x.error}` : `HTTP ${x.httpStatus || "fail"}`;
+      } else {
+        latEl.textContent = "";
+      }
+
+      const oldest = samples[0]?.ts;
+      winEl.textContent = oldest
+        ? `Buffer: ${((now - oldest) / 1000).toFixed(1)}s of samples (cap 20s)`
+        : "";
+
+      metaEl.textContent = `Poll #${seq} · samples in window: ${samples.length}`;
+      if (lastOkTime && ageSinceOk <= STALE_MS) {
+        const t = new Date().toLocaleTimeString(undefined, { hour12: false });
+        document.title = `${t} · live · #${seq}`;
+      }
+
+      const snap = document.getElementById("snapshot");
+      if (last && last.data) {
+        const d = last.data;
+        snap.textContent = JSON.stringify(
+          {
+            status: d.status,
+            paused: d.paused,
+            runner: d.runner,
+            current_task_id: d.current_task_id,
+            tasks_total: d.tasks_total,
+            tasks_pending: d.tasks_pending,
+            tasks_running: d.tasks_running,
+            tasks_complete: d.tasks_complete,
+            tasks_needs_review: d.tasks_needs_review,
+            project_root: d.project_root,
+            last_updated_utc: d.last_updated_utc,
+          },
+          null,
+          2
+        );
+      } else {
+        snap.textContent = "(waiting for successful status…)";
+      }
+
+      drawChart();
+    }
+
+    function drawChart() {
+      const w = logicalW;
+      const h = logicalH;
+      const pad = { l: 44, r: 44, t: 12, b: 28 };
+      const plotW = w - pad.l - pad.r;
+      const plotH = h - pad.t - pad.b;
+
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(0, 0, w, h);
+
+      const now = Date.now();
+      const tMin = now - WINDOW_MS;
+
+      let maxY = 4;
+      let maxLat = 100;
+      for (const s of samples) {
+        if (!s.ok || !s.data) continue;
+        const d = s.data;
+        maxY = Math.max(
+          maxY,
+          Number(d.tasks_pending) || 0,
+          Number(d.tasks_running) || 0,
+          Number(d.tasks_complete) || 0,
+          Number(d.tasks_needs_review) || 0
+        );
+        if (s.latencyMs != null) maxLat = Math.max(maxLat, s.latencyMs);
+      }
+      maxY = Math.ceil(maxY / 2) * 2 || 4;
+
+      function xAt(ts) {
+        return pad.l + ((ts - tMin) / WINDOW_MS) * plotW;
+      }
+      function yCount(v) {
+        return pad.t + plotH - (v / maxY) * plotH;
+      }
+      function yLat(ms) {
+        return pad.t + plotH - (ms / maxLat) * plotH;
+      }
+
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, pad.t);
+      ctx.lineTo(pad.l, pad.t + plotH);
+      ctx.lineTo(pad.l + plotW, pad.t + plotH);
+      ctx.stroke();
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "11px ui-monospace, monospace";
+      ctx.textAlign = "right";
+      for (let i = 0; i <= 4; i++) {
+        const val = Math.round((maxY * i) / 4);
+        const y = yCount(val);
+        ctx.fillText(String(val), pad.l - 6, y + 4);
+        ctx.strokeStyle = "#1e293b";
+        ctx.beginPath();
+        ctx.moveTo(pad.l, y);
+        ctx.lineTo(pad.l + plotW, y);
+        ctx.stroke();
+      }
+
+      ctx.textAlign = "left";
+      ctx.fillText("0 ms", pad.l + plotW + 6, pad.t + plotH);
+      ctx.fillText(maxLat + " ms", pad.l + plotW + 6, pad.t);
+
+      function polyline(color, field) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        let started = false;
+        for (const s of samples) {
+          if (!s.ok || !s.data) continue;
+          const x = xAt(s.ts);
+          const y = yCount(Number(s.data[field]) || 0);
+          if (!started) {
+            ctx.moveTo(x, y);
+            started = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+      }
+
+      polyline("#94a3b8", "tasks_pending");
+      polyline("#38bdf8", "tasks_running");
+      polyline("#4ade80", "tasks_complete");
+      polyline("#f97316", "tasks_needs_review");
+
+      ctx.strokeStyle = "#a78bfa";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      let latStart = false;
+      for (const s of samples) {
+        if (s.latencyMs == null) continue;
+        const x = xAt(s.ts);
+        const y = yLat(s.latencyMs);
+        if (!latStart) {
+          ctx.moveTo(x, y);
+          latStart = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "10px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("-20s", pad.l, h - 8);
+      ctx.fillText("now", pad.l + plotW, h - 8);
+
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.l + plotW, pad.t);
+      ctx.lineTo(pad.l + plotW, pad.t + plotH);
+      ctx.stroke();
+    }
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      logicalW = Math.max(320, rect.width);
+      canvas.width = Math.floor(logicalW * dpr);
+      canvas.height = Math.floor(logicalH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      render();
+    }
+
+    new ResizeObserver(resize).observe(canvas);
+    resize();
+
+    schedulePoll();
+
+    let liveRevision = "";
+    let liveCodeLoop = false;
+    let liveTab = "agent";
+    let lastLivePayload = null;
+
+    document.querySelectorAll(".tabs [data-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        liveTab = btn.getAttribute("data-tab") || "agent";
+        document.querySelectorAll(".tabs [data-tab]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        renderLiveBody();
+      });
+    });
+
+    function renderLiveBody() {
+      const pre = document.getElementById("codeStream");
+      if (!lastLivePayload) {
+        pre.textContent = "Loading…";
+        return;
+      }
+      const key =
+        liveTab === "agent"
+          ? "agent_output"
+          : liveTab === "verify"
+            ? "verification"
+            : "prompt";
+      const text = lastLivePayload[key];
+      const trimmed = text && String(text).trim() ? String(text) : "";
+      const wait = String(lastLivePayload.waiting_callout || "").trim();
+      const err = String(lastLivePayload.last_error_excerpt || "").trim();
+
+      function agentEmptyFallback() {
+        const st = lastLivePayload.status ?? "?";
+        const ts = lastLivePayload.task_status ?? "?";
+        const tid = lastLivePayload.current_task_id ?? "—";
+        const run = lastLivePayload.runner ?? "?";
+        const u = lastLivePayload.state_last_updated_utc || "—";
+        const halt = !!lastLivePayload.autonomy_halted;
+        const tr = lastLivePayload.tasks_running ?? "?";
+        return (
+          "No saved agent output yet (this panel only updates after each step writes state).\n\n" +
+          `Snapshot: autonomy=${st}, task_id=${tid}, task_status=${ts}, tasks_running=${tr}, runner=${run}, halted=${halt}\n` +
+          `Last state save (UTC): ${u}\n\n` +
+          (lastLivePayload.stream_note || "")
+        );
+      }
+
+      if (liveTab === "agent" && !trimmed) {
+        if (wait) {
+          pre.textContent = wait;
+          return;
+        }
+        if (err) {
+          pre.textContent =
+            "No agent output yet. Latest autonomy last_error (blocked / recovery / failure):\n\n" + err;
+          return;
+        }
+        pre.textContent = agentEmptyFallback();
+        return;
+      }
+      if (liveTab === "verify" && !trimmed) {
+        if (lastLivePayload.waiting_for_step_output && wait) {
+          pre.textContent =
+            "(Verification is empty until this step completes and pytest / checks run.)\n\n" + wait;
+          return;
+        }
+        pre.textContent = err
+          ? "No verification text yet.\n\n" + err
+          : "(verification is empty — no step finished yet or no task selected)";
+        return;
+      }
+      pre.textContent =
+        trimmed || `(${key} is empty — no step finished yet or no task selected)`;
+    }
+
+    async function pollLiveCodeOnce() {
+      if (window.location.protocol === "file:") return;
+      try {
+        const r = await fetch("/autonomy/live-code", { cache: "no-store" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const data = await r.json();
+        lastLivePayload = data;
+        const meta = document.getElementById("codeMeta");
+        const ts = data.task_title || "—";
+        const run = data.runner || "?";
+        const tid = data.current_task_id || "—";
+        const autonomy = data.status || "?";
+        const taskSt = data.task_status || "?";
+        const st =
+          autonomy === "blocked" || autonomy === "paused"
+            ? `${autonomy} · task ${taskSt}`
+            : `${taskSt} · autonomy ${autonomy}`;
+        const m = data.effective_openai_compatible_model || "?";
+        const base = data.openai_chat_base_url_configured ? "compat" : "openai";
+        meta.textContent = `${ts} · ${run} · ${tid} · ${st} · model ${m} (${base}) · rev ${data.revision}`;
+        const tr = Number(data.tasks_running);
+        const tnr = Number(data.tasks_needs_review);
+        if (Number.isFinite(tr) || Number.isFinite(tnr)) {
+          meta.textContent += ` · tasks run=${Number.isFinite(tr) ? tr : "?"} needs_review=${Number.isFinite(tnr) ? tnr : "?"}`;
+        }
+        const halt = !!data.autonomy_halted;
+        const pill = document.getElementById("autonomyStepPill");
+        const banner = document.getElementById("codingHaltBanner");
+        const term = document.querySelector(".terminal-wrap");
+        if (pill) {
+          pill.classList.remove("idle", "live", "halt");
+          if (halt) {
+            pill.classList.add("halt");
+            pill.textContent = data.guardrail_block_in_output ? "HALTED · guardrail (stderr)" : "HALTED · needs_review / blocked";
+          } else if (data.status === "running" || String(data.task_status || "").toLowerCase() === "running") {
+            pill.classList.add("live");
+            pill.textContent = "STEP · running";
+          } else {
+            pill.classList.add("idle");
+            pill.textContent = `STEP · ${String(data.task_status || data.status || "idle")}`;
+          }
+        }
+        if (banner && term) {
+          if (halt) {
+            banner.style.display = "block";
+            const why = data.guardrail_block_in_output
+              ? "Output contains a protected-path block — patches were not applied. Autonomy stops here until you fix the task (dashboard: Fix Blocked / isolation / paths), not infinite “running.”"
+              : `Autonomy status is ${String(data.status || "?")} and/or this task needs review — not an active codegen step.`;
+            banner.innerHTML =
+              `<strong>Halted.</strong> ${why}` +
+              (data.guardrail_block_in_output
+                ? ""
+                : " If stderr shows a protected-path message, treat it as blocked even if charts still briefly show cyan.");
+            term.classList.add("halted");
+          } else {
+            banner.style.display = "none";
+            banner.textContent = "";
+            term.classList.remove("halted");
+          }
+        }
+        document.title = halt ? `Halted · live autonomy` : `[live] autonomy progress`;
+
+        const hint =
+          data.openai_chat_base_url_configured &&
+          data.configured_openai_chat_model &&
+          data.effective_openai_compatible_model !== data.configured_openai_chat_model
+            ? ` Using "${data.effective_openai_compatible_model}" on your OpenAI-compatible URL (configured OPENAI_CHAT_MODEL was "${data.configured_openai_chat_model}").`
+            : "";
+        let note = data.stream_note || "";
+        if (halt && data.guardrail_block_in_output) {
+          note =
+            note +
+            (note.trim() ? "\n\n" : "") +
+            "This output indicates a guardrail stop; the cyan tasks_running chart line may lag one poll or reflect other tasks—it is not streaming progress.";
+        }
+        document.getElementById("codeNote").textContent = note + hint;
+        if (data.revision !== liveRevision) {
+          liveRevision = data.revision;
+          const pre = document.getElementById("codeStream");
+          pre.classList.remove("flash");
+          void pre.offsetWidth;
+          pre.classList.add("flash");
+        }
+        renderLiveBody();
+      } catch (e) {
+        document.getElementById("codeStream").textContent =
+          "Could not load /autonomy/live-code — is the server running?\n\n" + e;
+      }
+    }
+
+    function scheduleLiveCode() {
+      if (liveCodeLoop) return;
+      liveCodeLoop = true;
+      queueMicrotask(async () => {
+        try {
+          await pollLiveCodeOnce();
+        } finally {
+          liveCodeLoop = false;
+          setTimeout(scheduleLiveCode, LIVE_CODE_MS);
+        }
+      });
+    }
+    scheduleLiveCode();
+  </script>
+</body>
+</html>

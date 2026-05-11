@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GreenOps — Gardening Business Manager</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <style>
+    :root {
+      --green-900: #1b4332;
+      --green-700: #2d6a4f;
+      --green-600: #40916c;
+      --green-400: #74c69d;
+      --green-100: #d8f3dc;
+      --green-50:  #f0faf2;
+      --amber:     #e9840a;
+      --red:       #dc2626;
+      --blue:      #2563eb;
+      --surface:   #ffffff;
+      --bg:        #f4f7f4;
+      --text:      #1a2e1a;
+      --muted:     #4b5e4b;
+      --border:    #d1e0d1;
+      --sidebar-w: 220px;
+      --header-h:  60px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--green-900);
+      color: #fff;
+      display: flex; flex-direction: column;
+      z-index: 100;
+    }
+    .sidebar-brand {
+      padding: 1.25rem 1rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .sidebar-brand h1 { font-size: 1.15rem; font-weight: 800; letter-spacing: -.5px; }
+    .sidebar-brand small { font-size: .75rem; opacity: .6; }
+    .sidebar-brand svg { width: 22px; height: 22px; vertical-align: middle; margin-right: 6px; }
+
+    nav.sidebar-nav { flex: 1; padding: .75rem 0; overflow-y: auto; }
+    nav.sidebar-nav a {
+      display: flex; align-items: center; gap: .65rem;
+      padding: .6rem 1rem;
+      color: rgba(255,255,255,.75);
+      text-decoration: none;
+      font-size: .9rem;
+      border-radius: 0;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      border-left: 3px solid transparent;
+    }
+    nav.sidebar-nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+    nav.sidebar-nav a.active { background: rgba(255,255,255,.12); color: #fff; border-left-color: var(--green-400); font-weight: 600; }
+    nav.sidebar-nav a svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .sidebar-footer {
+      padding: .75rem 1rem;
+      border-top: 1px solid rgba(255,255,255,.12);
+      font-size: .78rem;
+      opacity: .5;
+    }
+
+    /* ── Main layout ── */
+    #app { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    header {
+      position: sticky; top: 0; z-index: 50;
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem;
+      gap: 1rem;
+    }
+    .header-title { font-weight: 700; font-size: 1rem; color: var(--green-700); }
+    .header-right { display: flex; align-items: center; gap: .75rem; }
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--green-600); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; font-weight: 700;
+    }
+    .weather-chip {
+      display: flex; align-items: center; gap: .4rem;
+      padding: .3rem .7rem;
+      background: var(--green-50);
+      border: 1px solid var(--green-100);
+      border-radius: 99px;
+      font-size: .8rem; color: var(--green-700); font-weight: 600;
+    }
+
+    /* ── Page ── */
+    main { flex: 1; padding: 1.5rem; max-width: 1200px; width: 100%; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-title { font-size: 1.4rem; font-weight: 800; color: var(--green-900); margin-bottom: 1.25rem; }
+
+    /* ── Stat cards ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: .75rem; padding: 1.1rem 1.25rem;
+    }
+    .stat-card .label { font-size: .78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .stat-card .value { font-size: 2rem; font-weight: 800; color: var(--green-900); line-height: 1.2; margin: .25rem 0; }
+    .stat-card .sub { font-size: .8rem; color: var(--muted); }
+    .stat-card.amber .value { color: var(--amber); }
+    .stat-card.red .value { color: var(--red); }
+    .stat-card.blue .value { color: var(--blue); }
+
+    /* ── Cards / panels ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: .75rem; padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .card-title { font-size: .95rem; font-weight: 700; color: var(--green-900); margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    thead th { text-align: left; padding: .6rem .75rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); border-bottom: 2px solid var(--border); }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:hover { background: var(--green-50); }
+    tbody td { padding: .65rem .75rem; color: var(--text); }
+    tbody tr:last-child { border-bottom: none; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: .2rem .6rem;
+      border-radius: 99px; font-size: .72rem; font-weight: 700; letter-spacing: .3px;
+    }
+    .badge-green  { background: #d1fae5; color: #065f46; }
+    .badge-amber  { background: #fef3c7; color: #92400e; }
+    .badge-red    { background: #fee2e2; color: #991b1b; }
+    .badge-blue   { background: #dbeafe; color: #1e40af; }
+    .badge-gray   { background: #f3f4f6; color: #4b5563; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .5rem 1rem; border-radius: .45rem; border: none;
+      font: inherit; font-size: .85rem; font-weight: 600;
+      cursor: pointer; transition: opacity .15s, background .15s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn-primary { background: var(--green-700); color: #fff; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+    .btn-sm { padding: .35rem .75rem; font-size: .8rem; }
+    .btn svg { width: 15px; height: 15px; }
+
+    /* ── Search / toolbar ── */
+    .toolbar { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .search-box {
+      flex: 1; min-width: 200px; max-width: 340px;
+      display: flex; align-items: center; gap: .5rem;
+      border: 1.5px solid var(--border); border-radius: .45rem;
+      background: var(--surface); padding: .4rem .75rem;
+    }
+    .search-box svg { width: 15px; height: 15px; color: var(--muted); flex-shrink: 0; }
+    .search-box input { border: none; outline: none; font: inherit; font-size: .87rem; background: transparent; width: 100%; color: var(--text); }
+
+    /* ── Form ── */
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .9rem; }
+    .field { display: flex; flex-direction: column; gap: .3rem; }
+    .field label { font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .field input, .field select, .field textarea {
+      border: 1.5px solid var(--border); border-radius: .4rem;
+      padding: .5rem .75rem; font: inherit; font-size: .9rem;
+      background: var(--surface); color: var(--text);
+      transition: border-color .15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--green-600); }
+    .field textarea { min-height: 80px; resize: vertical; }
+
+    /* ── Dashboard quick-list ── */
+    .quick-list { list-style: none; }
+    .quick-list li {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .6rem 0; border-bottom: 1px solid var(--border);
+      font-size: .88rem;
+    }
+    .quick-list li:last-child { border-bottom: none; }
+    .quick-list .ql-name { font-weight: 600; }
+    .quick-list .ql-sub { font-size: .78rem; color: var(--muted); margin-top: 1px; }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.4); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surface); border-radius: .85rem;
+      padding: 1.5rem; width: min(480px, calc(100vw - 2rem));
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 800; color: var(--green-900); margin-bottom: 1.1rem; }
+    .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 300;
+      display: flex; flex-direction: column; gap: .5rem;
+    }
+    .toast-item {
+      padding: .75rem 1.1rem; border-radius: .55rem;
+      font-size: .87rem; font-weight: 600;
+      background: var(--green-900); color: #fff;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2);
+      animation: slideIn .2s ease;
+    }
+    .toast-item.error { background: var(--red); }
+    @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+    .empty svg { width: 40px; height: 40px; opacity: .35; margin: 0 auto .75rem; display: block; }
+    .empty p { font-size: .9rem; }
+
+    /* ── Loading ── */
+    .loading { text-align: center; padding: 1.5rem; color: var(--muted); font-size: .9rem; }
+
+    /* ── Dashboard two-col ── */
+    .dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media (max-width: 860px) { .dash-cols { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      :root { --sidebar-w: 0px; }
+      #sidebar { display: none; }
+      #app { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside id="sidebar">
+  <div class="sidebar-brand">
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a10 10 0 0 1 10 10c0 4-3 8-8 9.5M12 2C6.5 2 2 6.5 2 12c0 4 3 8 8 9.5M12 2v20M2 12h20"/></svg>
+      GreenOps
+    </h1>
+    <small id="business-name">Gardening Business</small>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="active" data-page="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a href="#" data-page="jobs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      Jobs
+    </a>
+    <a href="#" data-page="customers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Customers
+    </a>
+    <a href="#" data-page="schedule">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Schedule
+    </a>
+    <a href="#" data-page="quotes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Quotes
+    </a>
+    <a href="#" data-page="invoices">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Invoices
+    </a>
+    <a href="#" data-page="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </a>
+  </nav>
+  <div class="sidebar-footer">GreenOps v1.0</div>
+</aside>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app">
+  <header>
+    <span class="header-title" id="page-title">Dashboard</span>
+    <div class="header-right">
+      <div class="weather-chip" id="weather-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        Loading…
+      </div>
+      <div class="avatar">GP</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ══ DASHBOARD PAGE ══ -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-title">Good morning 🌿</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Jobs Today</div>
+          <div class="value" id="stat-today">—</div>
+          <div class="sub">Scheduled for today</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="label">Pending Quotes</div>
+          <div class="value" id="stat-quotes">—</div>
+          <div class="sub">Awaiting response</div>
+        </div>
+        <div class="stat-card red">
+          <div class="label">Overdue Invoices</div>
+          <div class="value" id="stat-invoices">—</div>
+          <div class="sub">Past due date</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="label">Active Customers</div>
+          <div class="value" id="stat-customers">—</div>
+          <div class="sub">Total on books</div>
+        </div>
+      </div>
+
+      <div class="dash-cols">
+        <div class="card">
+          <div class="card-title">
+            Upcoming Jobs
+            <button class="btn btn-outline btn-sm" onclick="nav('jobs')">View all</button>
+          </div>
+          <ul class="quick-list" id="dash-jobs">
+            <li class="loading">Loading…</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            Recent Customers
+            <button class="btn btn-outline btn-sm" onclick="nav('customers')">View all</button>
+          </div>
+          <ul class="quick-list" id="dash-customers">
+            <li class="loading">Loading…</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ JOBS PAGE ══ -->
+    <div id="page-jobs" class="page">
+      <div class="page-title">Jobs</div>
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" placeholder="Search jobs…" oninput="filterJobs(this.value)" id="job-search">
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-new-job')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Job
+        </button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th>Property</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="jobs-tbody">
+              <tr><td colspan="6" class="loading">Loading jobs…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CUSTOMERS PAGE ══ -->
+    <div id="page-customers" class="page">
+      <div class="page-title">Customers</div>
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" placeholder="Search customers…" oninput="filterCustomers(this.value)" id="customer-search">
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-new-customer')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Customer
+        </button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Property</th>
+                <th>Tags</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="customers-tbody">
+              <tr><td colspan="6" class="loading">Loading customers…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCHEDULE PAGE ══ -->
+    <div id="page-schedule" class="page">
+      <div class="page-title">Schedule</div>
+      <div class="card">
+        <div class="card-title">Weekly View</div>
+        <div id="schedule-grid" class="loading">Loading schedule…</div>
+      </div>
+    </div>
+
+    <!-- ══ QUOTES PAGE ══ -->
+    <div id="page-quotes" class="page">
+      <div class="page-title">Quotes</div>
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="openModal('modal-new-quote')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Quote
+        </button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Customer</th><th>Services</th><th>Total</th><th>Status</th><th>Date</th><th></th></tr>
+            </thead>
+            <tbody id="quotes-tbody">
+              <tr><td colspan="7" class="loading">Loading quotes…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ INVOICES PAGE ══ -->
+    <div id="page-invoices" class="page">
+      <div class="page-title">Invoices</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Customer</th><th>Amount</th><th>Status</th><th>Due</th><th></th></tr>
+            </thead>
+            <tbody id="invoices-tbody">
+              <tr><td colspan="6" class="loading">Loading invoices…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SETTINGS PAGE ══ -->
+    <div id="page-settings" class="page">
+      <div class="page-title">Settings</div>
+      <div class="card">
+        <div class="card-title">Business Profile</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Business Name</label>
+            <input type="text" id="set-business-name" placeholder="e.g. Green Thumb Gardens">
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <input type="tel" id="set-phone" placeholder="+64 21 000 0000">
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="set-email" placeholder="hello@yourgarden.co.nz">
+          </div>
+          <div class="field">
+            <label>Service Region</label>
+            <input type="text" id="set-region" placeholder="e.g. Auckland, Waikato">
+          </div>
+        </div>
+        <div style="margin-top:1rem">
+          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Pricing Tiers</div>
+        <div id="pricing-tiers" class="loading">Loading…</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- New Job -->
+<div class="modal-backdrop" id="modal-new-job">
+  <div class="modal">
+    <div class="modal-title">New Job</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Customer</label>
+        <select id="nj-customer"><option value="">Select customer…</option></select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="nj-status">
+          <option>Scheduled</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Description</label>
+        <textarea id="nj-description" placeholder="Describe the job…"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-new-job')">Cancel</button>
+      <button class="btn btn-primary" onclick="createJob()">Create Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Customer -->
+<div class="modal-backdrop" id="modal-new-customer">
+  <div class="modal">
+    <div class="modal-title">Add Customer</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Full Name *</label>
+        <input type="text" id="nc-name" placeholder="Jane Smith">
+      </div>
+      <div class="field">
+        <label>Email *</label>
+        <input type="email" id="nc-email" placeholder="jane@example.com">
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="nc-phone" placeholder="+64 21 000 000">
+      </div>
+      <div class="field">
+        <label>Property Address</label>
+        <input type="text" id="nc-address" placeholder="14 Garden Street, Auckland">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-new-customer')">Cancel</button>
+      <button class="btn btn-primary" onclick="createCustomer()">Add Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Quote -->
+<div class="modal-backdrop" id="modal-new-quote">
+  <div class="modal">
+    <div class="modal-title">New Quote</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Customer</label>
+        <select id="nq-customer"><option value="">Select customer…</option></select>
+      </div>
+      <div class="field">
+        <label>Total Amount ($)</label>
+        <input type="number" id="nq-amount" placeholder="0.00" step="0.01">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Services / Notes</label>
+        <textarea id="nq-notes" placeholder="Lawn mowing, hedge trimming, garden tidy…"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-new-quote')">Cancel</button>
+      <button class="btn btn-primary" onclick="createQuote()">Create Quote</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast"></div>
+
+<script>
+// ══ STATE ══
+let _customers = [];
+let _jobs = [];
+let _quotes = [];
+let _invoices = [];
+
+// ══ NAVIGATION ══
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('[data-page]').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector('[data-page="' + page + '"]').classList.add('active');
+  document.getElementById('page-title').textContent = {
+    dashboard: 'Dashboard', jobs: 'Jobs', customers: 'Customers',
+    schedule: 'Schedule', quotes: 'Quotes', invoices: 'Invoices', settings: 'Settings'
+  }[page];
+  if (page === 'jobs') loadJobs();
+  if (page === 'customers') loadCustomers();
+  if (page === 'schedule') loadSchedule();
+  if (page === 'quotes') loadQuotes();
+  if (page === 'invoices') loadInvoices();
+  if (page === 'settings') loadSettings();
+}
+
+document.querySelectorAll('[data-page]').forEach(a => {
+  a.addEventListener('click', e => { e.preventDefault(); nav(a.dataset.page); });
+});
+
+// ══ TOAST ══
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = 'toast-item' + (type === 'error' ? ' error' : '');
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ══ MODAL ══
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
+});
+
+// ══ BADGES ══
+function statusBadge(s) {
+  const map = {
+    'scheduled': 'badge-blue', 'in progress': 'badge-amber',
+    'completed': 'badge-green', 'cancelled': 'badge-gray',
+    'draft': 'badge-gray', 'sent': 'badge-blue',
+    'accepted': 'badge-green', 'declined': 'badge-red',
+    'paid': 'badge-green', 'unpaid': 'badge-amber', 'overdue': 'badge-red'
+  };
+  const cls = map[(s||'').toLowerCase()] || 'badge-gray';
+  return `<span class="badge ${cls}">${s || '—'}</span>`;
+}
+
+// ══ API HELPERS ══
+async function api(path, opts = {}) {
+  try {
+    const r = await fetch(path, opts);
+    if (!r.ok) throw new Error(r.statusText);
+    return await r.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+// ══ WEATHER ══
+async function loadWeather() {
+  const data = await api('/api/v1/weather');
+  const chip = document.getElementById('weather-chip');
+  if (data && data.summary) {
+    chip.lastChild.textContent = ' ' + data.summary.slice(0, 30);
+  } else {
+    chip.lastChild.textContent = ' Fine conditions';
+  }
+}
+
+// ══ DASHBOARD ══
+async function loadDashboard() {
+  // Stats
+  document.getElementById('stat-today').textContent = '—';
+  document.getElementById('stat-quotes').textContent = '—';
+  document.getElementById('stat-invoices').textContent = '—';
+  document.getElementById('stat-customers').textContent = '—';
+
+  const [dash, custs, qs, invs] = await Promise.all([
+    api('/api/v1/dashboard'),
+    api('/api/v1/customers'),
+    api('/api/v1/quotes'),
+    api('/api/v1/invoices')
+  ]);
+
+  document.getElementById('stat-today').textContent = dash?.jobs_scheduled_today ?? 0;
+  document.getElementById('stat-quotes').textContent = (qs?.quotes ?? qs ?? []).filter(q => (q.status || '').toLowerCase() === 'sent').length || (dash?.pending_quotes ?? 0);
+  document.getElementById('stat-invoices').textContent = (invs?.invoices ?? invs ?? []).filter(i => (i.status || '').toLowerCase() === 'overdue').length || (dash?.overdue_invoices ?? 0);
+
+  const custArr = custs?.customers ?? custs ?? [];
+  _customers = custArr;
+  document.getElementById('stat-customers').textContent = custArr.length;
+
+  // Jobs quick list
+  const jobsList = document.getElementById('dash-jobs');
+  const jobsData = await api('/api/v1/jobs');
+  const jobArr = jobsData?.jobs ?? jobsData ?? [];
+  _jobs = jobArr;
+  if (!jobArr.length) {
+    jobsList.innerHTML = '<li><div class="empty"><p>No jobs yet</p></div></li>';
+  } else {
+    jobsList.innerHTML = jobArr.slice(0, 5).map(j => `
+      <li>
+        <div>
+          <div class="ql-name">${esc(j.description || 'Job #' + j.job_id)}</div>
+          <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}</div>
+        </div>
+        ${statusBadge(j.workflow_status)}
+      </li>`).join('');
+  }
+
+  // Customers quick list
+  const custList = document.getElementById('dash-customers');
+  if (!custArr.length) {
+    custList.innerHTML = '<li><div class="empty"><p>No customers yet</p></div></li>';
+  } else {
+    custList.innerHTML = custArr.slice(0, 5).map(c => `
+      <li>
+        <div>
+          <div class="ql-name">${esc(c.name)}</div>
+          <div class="ql-sub">${esc(c.email || '')}</div>
+        </div>
+        <span style="font-size:.78rem;color:var(--muted)">${esc(c.phone || '')}</span>
+      </li>`).join('');
+  }
+}
+
+// ══ JOBS ══
+async function loadJobs() {
+  const data = await api('/api/v1/jobs');
+  _jobs = data?.jobs ?? data ?? [];
+  renderJobs(_jobs);
+  populateCustomerDropdowns();
+}
+
+function renderJobs(arr) {
+  const tbody = document.getElementById('jobs-tbody');
+  if (!arr.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+      <p>No jobs found</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = arr.map(j => `
+    <tr>
+      <td><strong>#${j.job_id}</strong></td>
+      <td>${esc(j.customer?.name || '—')}</td>
+      <td>${esc(j.property?.address || j.property_info?.address || '—')}</td>
+      <td>${esc((j.description || '').slice(0, 60))}</td>
+      <td>${statusBadge(j.workflow_status)}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="viewJob(${j.job_id})">View</button></td>
+    </tr>`).join('');
+}
+
+function filterJobs(q) {
+  const f = _jobs.filter(j =>
+    (j.description || '').toLowerCase().includes(q.toLowerCase()) ||
+    (j.customer?.name || '').toLowerCase().includes(q.toLowerCase())
+  );
+  renderJobs(f);
+}
+
+function viewJob(id) { toast('Job #' + id + ' — detail view coming soon'); }
+
+async function createJob() {
+  const desc = document.getElementById('nj-description').value.trim();
+  const custId = document.getElementById('nj-customer').value;
+  const status = document.getElementById('nj-status').value;
+  if (!desc) { toast('Please enter a description', 'error'); return; }
+  const r = await api('/api/v1/jobs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description: desc, customer_id: custId || undefined, workflow_status: status })
+  });
+  if (r) {
+    toast('Job created');
+    closeModal('modal-new-job');
+    loadJobs();
+    loadDashboard();
+  } else {
+    toast('Could not create job', 'error');
+  }
+}
+
+// ══ CUSTOMERS ══
+async function loadCustomers() {
+  const data = await api('/api/v1/customers');
+  _customers = data?.customers ?? data ?? [];
+  renderCustomers(_customers);
+  populateCustomerDropdowns();
+}
+
+function renderCustomers(arr) {
+  const tbody = document.getElementById('customers-tbody');
+  if (!arr.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <p>No customers yet. Add your first customer!</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = arr.map(c => `
+    <tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.email || '—')}</td>
+      <td>${esc(c.phone || '—')}</td>
+      <td>${esc(c.property_address || '—')}</td>
+      <td>${(c.tags || []).map(t => `<span class="badge badge-green">${esc(t)}</span>`).join(' ') || '—'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="viewCustomer(${c.id})">View</button></td>
+    </tr>`).join('');
+}
+
+function filterCustomers(q) {
+  const f = _customers.filter(c =>
+    (c.name || '').toLowerCase().includes(q.toLowerCase()) ||
+    (c.email || '').toLowerCase().includes(q.toLowerCase())
+  );
+  renderCustomers(f);
+}
+
+function viewCustomer(id) { toast('Customer #' + id + ' — detail view coming soon'); }
+
+async function createCustomer() {
+  const name = document.getElementById('nc-name').value.trim();
+  const email = document.getElementById('nc-email').value.trim();
+  const phone = document.getElementById('nc-phone').value.trim();
+  const address = document.getElementById('nc-address').value.trim();
+  if (!name || !email) { toast('Name and email are required', 'error'); return; }
+  const r = await api('/api/v1/customers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, phone: phone || undefined, property_address: address || undefined })
+  });
+  if (r) {
+    toast('Customer added');
+    closeModal('modal-new-customer');
+    ['nc-name','nc-email','nc-phone','nc-address'].forEach(id => document.getElementById(id).value = '');
+    loadCustomers();
+    loadDashboard();
+  } else {
+    toast('Could not add customer', 'error');
+  }
+}
+
+function populateCustomerDropdowns() {
+  ['nj-customer', 'nq-customer'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Select customer…</option>' +
+      _customers.map(c => `<option value="${c.id}" ${c.id == cur ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  });
+}
+
+// ══ SCHEDULE ══
+async function loadSchedule() {
+  const data = await api('/api/v1/schedule');
+  const el = document.getElementById('schedule-grid');
+  const slots = data?.slots ?? data ?? [];
+  if (!slots.length) {
+    el.innerHTML = `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <p>No scheduled items this week</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Date/Time</th><th>Job</th><th>Customer</th><th>Status</th></tr></thead>
+    <tbody>${slots.map(s => `<tr>
+      <td>${esc(s.scheduled_at || s.date || '—')}</td>
+      <td>${esc(s.job_description || s.description || 'Job #' + s.job_id)}</td>
+      <td>${esc(s.customer_name || s.customer?.name || '—')}</td>
+      <td>${statusBadge(s.status)}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// ══ QUOTES ══
+async function loadQuotes() {
+  const data = await api('/api/v1/quotes');
+  _quotes = data?.quotes ?? data ?? [];
+  const tbody = document.getElementById('quotes-tbody');
+  if (!_quotes.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <p>No quotes yet</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _quotes.map(q => `
+    <tr>
+      <td><strong>#${q.id || q.quote_id}</strong></td>
+      <td>${esc(q.customer_name || q.customer?.name || '—')}</td>
+      <td>${esc((q.services || q.notes || '').slice(0, 50) || '—')}</td>
+      <td><strong>$${Number(q.total || q.amount || 0).toFixed(2)}</strong></td>
+      <td>${statusBadge(q.status)}</td>
+      <td>${esc(q.created_at?.split('T')[0] || q.date || '—')}</td>
+      <td><button class="btn btn-outline btn-sm">View</button></td>
+    </tr>`).join('');
+  populateCustomerDropdowns();
+}
+
+async function createQuote() {
+  const custId = document.getElementById('nq-customer').value;
+  const amount = document.getElementById('nq-amount').value;
+  const notes = document.getElementById('nq-notes').value.trim();
+  if (!custId) { toast('Please select a customer', 'error'); return; }
+  const r = await api('/api/v1/quotes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ customer_id: Number(custId), total: Number(amount) || 0, services: notes, status: 'Draft' })
+  });
+  if (r) {
+    toast('Quote created');
+    closeModal('modal-new-quote');
+    loadQuotes();
+  } else {
+    toast('Could not create quote', 'error');
+  }
+}
+
+// ══ INVOICES ══
+async function loadInvoices() {
+  const data = await api('/api/v1/invoices');
+  _invoices = data?.invoices ?? data ?? [];
+  const tbody = document.getElementById('invoices-tbody');
+  if (!_invoices.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      <p>No invoices yet</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _invoices.map(inv => `
+    <tr>
+      <td><strong>#${inv.id || inv.invoice_id}</strong></td>
+      <td>${esc(inv.customer_name || inv.customer?.name || '—')}</td>
+      <td><strong>$${Number(inv.amount_due || inv.total || 0).toFixed(2)}</strong></td>
+      <td>${statusBadge(inv.status)}</td>
+      <td>${esc(inv.due_date?.split('T')[0] || inv.due || '—')}</td>
+      <td><button class="btn btn-outline btn-sm">View</button></td>
+    </tr>`).join('');
+}
+
+// ══ SETTINGS ══
+async function loadSettings() {
+  const [pricing] = await Promise.all([
+    api('/api/v1/settings/services/pricing_tiers')
+  ]);
+  const tiersEl = document.getElementById('pricing-tiers');
+  const tiers = pricing?.setting?.current_value;
+  if (tiers) {
+    let arr;
+    try { arr = JSON.parse(tiers); } catch { arr = [tiers]; }
+    tiersEl.innerHTML = arr.map(t => `<span class="badge badge-green" style="margin-right:.4rem;font-size:.85rem;padding:.35rem .8rem">${esc(t)}</span>`).join('');
+  } else {
+    tiersEl.innerHTML = '<span class="badge badge-gray">Standard</span>';
+  }
+}
+
+async function saveSettings() {
+  const name = document.getElementById('set-business-name').value.trim();
+  if (name) {
+    document.getElementById('business-name').textContent = name;
+    document.title = name + ' — GreenOps';
+  }
+  toast('Settings saved');
+}
+
+// ══ ESCAPE HTML ══
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══ INIT ══
+loadWeather();
+loadDashboard();
+</script>
+</body>
+</html>

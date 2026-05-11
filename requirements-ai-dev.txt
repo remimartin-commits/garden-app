@@ -1,0 +1,21 @@
+# Full local AI/chatbot dev stack for Codebot (install on top of app + local LLM stack).
+#
+#   pip install -r requirements-ai-dev.txt
+#
+# Includes: FastAPI app, PyTorch+Transformers, NLTK, spaCy, Jupyter.
+
+-r requirements.txt
+-r requirements-local-codellama.txt
+
+# NLP & prototyping
+nltk>=3.8.1
+spacy>=3.7.0,<4
+scikit-learn>=1.4.0
+
+# Notebooks & cloud-style workflows (export notebook to Google Colab or SageMaker Studio)
+jupyter>=1.0.0
+ipykernel>=6.29.0
+notebook>=7.0.0
+
+# Hugging Face datasets / Hub utilities
+datasets>=2.19.0

@@ -1,0 +1,8 @@
+# Optional: pip install -r requirements-local-codellama.txt
+# For local_codellama.py (PyTorch + Transformers). Large download.
+torch
+transformers>=4.38.0
+accelerate>=0.27.0
+safetensors
+python-dotenv>=1.0.0
+# Optional GPU 8-bit: pip install bitsandbytes
