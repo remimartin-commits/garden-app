@@ -15,6 +15,11 @@ from sqlalchemy.orm import Session
 from app import config
 from app.audit_api import append_audit_log
 from app.attachment_utils import coerce_attachments_list
+from app.s3_uploads import (
+    delete_all_stored_attachments_in_list,
+    delete_attachments_removed_from_lists,
+    enrich_attachments_for_display,
+)
 from app.database import get_db
 from app.entities import NotificationLog
 from app.job_management import complete_job
@@ -81,6 +86,13 @@ def _job_dict_from_row(job: JobORM) -> dict[str, Any]:
     att = merged.get("attachments")
     merged["attachments"] = coerce_attachments_list(att)
     return merged
+
+
+def _job_for_api_response(job: JobORM) -> dict[str, Any]:
+    """Job dict for JSON clients; attachment ``file_url`` values may be presigned for display."""
+    d = _job_dict_from_row(job)
+    d["attachments"] = enrich_attachments_for_display(d.get("attachments") or [])
+    return d
 
 
 def _parse_optional_estimated_minutes(val: Any) -> Optional[int]:
@@ -250,7 +262,7 @@ def get_job(job_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
     row = db.get(JobORM, job_id)
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    return _job_dict_from_row(row)
+    return _job_for_api_response(row)
 
 
 @router.post("/api/v1/jobs/{job_id}/attachments")
@@ -291,7 +303,8 @@ async def post_job_attachment(
     _persist_job_dict(db, job_id, detail)
     db.commit()
     db.refresh(row)
-    return item
+    disp = enrich_attachments_for_display([item])
+    return disp[0] if disp else item
 
 
 @router.patch("/api/v1/jobs/{job_id}")
@@ -343,6 +356,8 @@ def patch_job(
     _persist_job_dict(db, job_id, after)
     db.commit()
     db.refresh(row)
+    if "attachments" in body:
+        delete_attachments_removed_from_lists(before.get("attachments"), after.get("attachments"))
     append_audit_log(
         action="PATCH",
         entity="job",
@@ -351,7 +366,9 @@ def patch_job(
         after=after,
         actor_user_id=x_actor_user_id,
     )
-    return after
+    resp = dict(after)
+    resp["attachments"] = enrich_attachments_for_display(resp.get("attachments") or [])
+    return resp
 
 
 @router.delete("/api/v1/jobs/{job_id}")
@@ -366,6 +383,7 @@ def delete_job(
     before = deepcopy(_job_dict_from_row(row))
     db.delete(row)
     db.commit()
+    delete_all_stored_attachments_in_list(before.get("attachments"))
     append_audit_log(
         action="DELETE",
         entity="job",
@@ -515,7 +533,7 @@ def create_job(
 @router.get("/api/v1/jobs")
 def list_jobs(db: Session = Depends(get_db)) -> dict[str, list[dict[str, Any]]]:
     rows = db.query(JobORM).order_by(JobORM.id).all()
-    return {"jobs": [_job_dict_from_row(r) for r in rows]}
+    return {"jobs": [_job_for_api_response(r) for r in rows]}
 
 
 @router.get("/api/v1/exports/jobs.csv")

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from app.s3_uploads import _normalize_image_content_type
+import pytest
+
+from app.s3_uploads import _normalize_image_content_type, attachment_object_key_from_file_url
 
 
 def test_image_jpg_maps_to_jpeg() -> None:
@@ -19,3 +21,17 @@ def test_missing_ct_with_jpeg_extension() -> None:
 
 def test_standard_jpeg_unchanged() -> None:
     assert _normalize_image_content_type("image/jpeg", "a.bin") == "image/jpeg"
+
+
+def test_attachment_object_key_from_public_base(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.config.S3_PUBLIC_BASE_URL", "https://cdn.example", raising=False)
+    monkeypatch.setattr("app.config.S3_JOBS_PREFIX", "job-attachments", raising=False)
+    u = "https://cdn.example/job-attachments/jobs/99/aa_bb.jpg"
+    assert attachment_object_key_from_file_url(u) == "job-attachments/jobs/99/aa_bb.jpg"
+
+
+def test_attachment_object_key_suffix_without_matching_base(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.config.S3_PUBLIC_BASE_URL", "https://other.example", raising=False)
+    monkeypatch.setattr("app.config.S3_JOBS_PREFIX", "job-attachments", raising=False)
+    u = "https://cdn.example/job-attachments/recurring/3/x.png"
+    assert attachment_object_key_from_file_url(u) == "job-attachments/recurring/3/x.png"

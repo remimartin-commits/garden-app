@@ -12,6 +12,11 @@ from app import config
 from app.attachment_utils import coerce_attachments_list
 from app.extra_costs import normalize_extra_costs_lines
 from app.property_api import _get_active_property
+from app.s3_uploads import (
+    delete_all_stored_attachments_in_list,
+    delete_attachments_removed_from_lists,
+    enrich_attachments_for_display,
+)
 
 router = APIRouter(tags=["recurring-job-rules"])
 
@@ -104,7 +109,7 @@ def _rule_to_response(rule: dict[str, Any]) -> dict[str, Any]:
         "extra_costs": normalize_extra_costs_lines(rule.get("extra_costs", [])),
         "instances_worked": _norm_instances_worked(rule.get("instances_worked")),
         "hours_per_instance": _hours_per_instance_out(rule),
-        "attachments": coerce_attachments_list(rule.get("attachments")),
+        "attachments": enrich_attachments_for_display(coerce_attachments_list(rule.get("attachments"))),
     }
 
 
@@ -259,6 +264,7 @@ def read_recurring_job_rule(rule_id: int) -> dict[str, Any]:
 @router.patch("/api/v1/recurring-job-rules/{rule_id}")
 def patch_recurring_job_rule(rule_id: int, body: RecurringJobRulePatchBody) -> dict[str, Any]:
     rule = _rule_or_404(rule_id)
+    before_attachments = coerce_attachments_list(list(rule.get("attachments") or []))
     data = body.model_dump(exclude_unset=True)
     if "description" in data and data["description"] is not None:
         rule["description"] = str(data["description"]).strip()
@@ -293,6 +299,8 @@ def patch_recurring_job_rule(rule_id: int, body: RecurringJobRulePatchBody) -> d
     if "attachments" in data and data["attachments"] is not None:
         rule["attachments"] = coerce_attachments_list(data["attachments"])
     _RULES[rule_id] = rule
+    if "attachments" in data and data["attachments"] is not None:
+        delete_attachments_removed_from_lists(before_attachments, rule["attachments"])
     return _rule_to_response(rule)
 
 
@@ -302,6 +310,8 @@ def delete_recurring_job_rule(rule_id: int) -> None:
         raise HTTPException(status_code=400, detail="Cannot delete the default sample rule")
     if rule_id not in _RULES:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recurring job rule not found")
+    rule = _RULES[rule_id]
+    delete_all_stored_attachments_in_list(coerce_attachments_list(rule.get("attachments")))
     del _RULES[rule_id]
 
 
@@ -336,7 +346,8 @@ async def post_recurring_rule_attachment(
     atts.append(item)
     rule["attachments"] = atts
     _RULES[rule_id] = rule
-    return item
+    disp = enrich_attachments_for_display([item])
+    return disp[0] if disp else item
 
 
 @router.post(

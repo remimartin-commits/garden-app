@@ -353,6 +353,163 @@
     .modal.modal--wide { width: min(720px, calc(100vw - 2rem)); }
     .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; flex-wrap: wrap; }
 
+    /* ── Job / recurring photo gallery (detail modals) ── */
+    .jd-photo-heading {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--green-900);
+      letter-spacing: -0.02em;
+      margin: 1rem 0 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .jd-photo-heading::before {
+      content: "";
+      width: 3px;
+      height: 1rem;
+      border-radius: 2px;
+      background: linear-gradient(180deg, var(--green-600), var(--green-400));
+      flex-shrink: 0;
+    }
+    .jd-photo-empty {
+      margin: 0.35rem 0 0.5rem;
+      padding: 1rem 1rem 1.1rem;
+      text-align: center;
+      font-size: 0.88rem;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 0.55rem;
+      background: linear-gradient(165deg, var(--green-50) 0%, var(--surface) 55%);
+    }
+    .jd-photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      gap: 0.85rem 0.75rem;
+      align-items: start;
+      margin: 0.35rem 0 0.5rem;
+    }
+    .jd-photo-tile {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .jd-photo-frame {
+      display: block;
+      border-radius: 0.55rem;
+      overflow: hidden;
+      border: 1px solid rgba(45, 106, 79, 0.18);
+      box-shadow: 0 2px 14px rgba(27, 67, 50, 0.07);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      background: var(--green-50);
+      aspect-ratio: 1;
+      position: relative;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .jd-photo-frame:focus-visible {
+      outline: 2px solid var(--green-600);
+      outline-offset: 2px;
+    }
+    .jd-photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .jd-photo-caption {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    .jd-photo-remove.btn-sm {
+      width: 100%;
+      margin-top: 0.1rem;
+    }
+    .jd-photo-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.25rem;
+      flex-wrap: wrap;
+    }
+    .jd-photo-pos {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--green-800);
+      background: rgba(45, 106, 79, 0.12);
+      padding: 0.12rem 0.4rem;
+      border-radius: 0.3rem;
+      min-width: 1.5rem;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .jd-photo-drag {
+      cursor: grab;
+      padding: 0.2rem 0.35rem;
+      font-size: 0.85rem;
+      line-height: 1;
+      border: 1px dashed var(--border);
+      border-radius: 0.35rem;
+      background: var(--surface);
+      color: var(--muted);
+      touch-action: none;
+      user-select: none;
+    }
+    .jd-photo-drag:active { cursor: grabbing; }
+    .jd-photo-drag:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .jd-photo-order {
+      display: flex;
+      gap: 0.25rem;
+      margin-left: auto;
+    }
+    .jd-photo-order .btn-sm {
+      min-width: 2.25rem;
+      padding: 0.25rem 0.35rem;
+      font-size: 0.8rem;
+      touch-action: manipulation;
+    }
+    .jd-photo-tile.jd-photo-dragover {
+      outline: 2px dashed var(--green-600);
+      outline-offset: 2px;
+      border-radius: 0.5rem;
+    }
+    .jd-upload-progress {
+      margin-top: 0.45rem;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--green-800);
+      min-height: 1.35rem;
+    }
+    .jd-upload-progress[hidden] { display: none !important; }
+    @media (hover: hover) {
+      .jd-photo-frame:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(27, 67, 50, 0.12);
+        border-color: var(--green-400);
+      }
+    }
+    .jd-photo-frame:active {
+      transform: scale(0.988);
+      box-shadow: 0 3px 14px rgba(27, 67, 50, 0.1);
+    }
+
+    /* 16px+ avoids iOS zoom-on-focus on file inputs in job modals */
+    #jd-photo-input,
+    #rd-photo-input {
+      font-size: 1rem;
+      max-width: 100%;
+    }
+
     /* ── Toast ── */
     #toast {
       position: fixed;
@@ -607,9 +764,28 @@
         cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; max-width: 100%;
       }
       .job-spec-link:hover { color: var(--green-900); }
-      .jd-photo-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-      .jd-photo-tile { width: 7.5rem; }
-      .jd-photo-tile img { width: 7.5rem; height: 7.5rem; object-fit: cover; border-radius: 0.35rem; border: 1px solid var(--border); }
+
+      /* Photo gallery: stable two-column grid on phones, comfortable tap targets */
+      .jd-photo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem 0.55rem;
+      }
+      .jd-photo-heading { margin-top: 0.65rem; font-size: 0.8rem; }
+      .jd-photo-empty { padding: 1rem 0.75rem; font-size: 0.84rem; line-height: 1.45; }
+      .jd-photo-caption { font-size: 0.76rem; }
+      .jd-photo-remove.btn-sm {
+        min-height: 2.65rem;
+        padding: 0.5rem 0.65rem;
+        font-size: 0.84rem;
+        touch-action: manipulation;
+      }
+      .jd-photo-toolbar {
+        gap: 0.28rem;
+      }
+      .jd-photo-order .btn-sm {
+        min-width: 2.05rem;
+        padding: 0.28rem 0.3rem;
+      }
 
       .cal-toolbar .cal-label { min-width: 0; flex: 1; }
 
@@ -623,6 +799,7 @@
 
     @media (max-width: 380px) {
       .stats-grid { grid-template-columns: 1fr; }
+      .jd-photo-grid { gap: 0.55rem 0.45rem; }
     }
   </style>
 </head>
@@ -1135,7 +1312,8 @@
     <div class="field" style="margin-top:1rem">
       <label>Add photos</label>
       <input type="file" id="jd-photo-input" accept="image/jpeg,image/jpg,.jpg,.jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
-      <button type="button" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadJobDetailPhotos()">Upload to storage</button>
+      <button type="button" id="jd-upload-btn" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadJobDetailPhotos()">Upload to storage</button>
+      <div id="jd-upload-progress" class="jd-upload-progress" role="status" aria-live="polite" hidden></div>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" onclick="closeJobDetailModal()">Close</button>
@@ -1153,7 +1331,8 @@
     <div class="field" style="margin-top:1rem">
       <label>Add photos</label>
       <input type="file" id="rd-photo-input" accept="image/jpeg,image/jpg,.jpg,.jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
-      <button type="button" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadRecurringDetailPhotos()">Upload to storage</button>
+      <button type="button" id="rd-upload-btn" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadRecurringDetailPhotos()">Upload to storage</button>
+      <div id="rd-upload-progress" class="jd-upload-progress" role="status" aria-live="polite" hidden></div>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn btn-outline" onclick="closeRecurringDetailModal()">Close</button>
@@ -2393,14 +2572,160 @@ function tryOpenJobOrRecurringHash() {
   }
 }
 
+function attachmentPayloadForPatch(arr) {
+  return (Array.isArray(arr) ? arr : []).map(function (a) {
+    return {
+      filename: String(a && a.filename != null ? a.filename : '').trim() || 'photo',
+      file_url: String(a && a.file_url != null ? a.file_url : '').trim(),
+    };
+  }).filter(function (x) {
+    return x.file_url;
+  });
+}
+
+function reorderAttachmentsArray(items, fromIdx, toIdx) {
+  const a = Array.isArray(items) ? items.slice() : [];
+  if (fromIdx < 0 || fromIdx >= a.length || toIdx < 0 || toIdx > a.length || fromIdx === toIdx) {
+    return a;
+  }
+  const it = a.splice(fromIdx, 1)[0];
+  a.splice(toIdx, 0, it);
+  return a;
+}
+
+async function persistJobAttachmentsFromList(jobId, atts) {
+  const pr = await fetch('/api/v1/jobs/' + encodeURIComponent(jobId), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ attachments: attachmentPayloadForPatch(atts) }),
+  });
+  if (!pr.ok) throw new Error(await pr.text());
+  const updated = await pr.json();
+  const ix = _jobs.findIndex(function (x) { return Number(x.job_id) === Number(jobId); });
+  if (ix >= 0) _jobs[ix] = updated;
+  return updated;
+}
+
+async function persistRecurringAttachmentsFromList(ruleId, atts) {
+  const pr = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(ruleId), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ attachments: attachmentPayloadForPatch(atts) }),
+  });
+  if (!pr.ok) throw new Error(await pr.text());
+  await pr.json();
+  await loadRecurringRules();
+}
+
+async function moveJobAttachmentStep(jobId, fromIdx, toIdx) {
+  if (fromIdx === toIdx) return;
+  try {
+    const r = await fetch('/api/v1/jobs/' + encodeURIComponent(jobId));
+    if (!r.ok) throw new Error(await r.text());
+    const j = await r.json();
+    const atts = Array.isArray(j.attachments) ? j.attachments.slice() : [];
+    const next = reorderAttachmentsArray(atts, fromIdx, toIdx);
+    await persistJobAttachmentsFromList(jobId, next);
+    toast('Photo order updated');
+    openJobDetail(jobId, { setHash: false });
+  } catch (e) {
+    toast('Could not reorder', 'error');
+  }
+}
+
+function moveJobPhotoUp(jobId, idx) {
+  moveJobAttachmentStep(jobId, idx, idx - 1);
+}
+
+function moveJobPhotoDown(jobId, idx) {
+  moveJobAttachmentStep(jobId, idx, idx + 1);
+}
+
+function jdPhotoHandleDragStart(ev) {
+  const el = ev.currentTarget;
+  const kind = el.getAttribute('data-entity-kind');
+  const id = Number(el.getAttribute('data-entity-id'));
+  const from = Number(el.getAttribute('data-photo-from'));
+  ev.dataTransfer.setData('application/greenops-photo', JSON.stringify({ kind: kind, id: id, from: from }));
+  ev.dataTransfer.effectAllowed = 'move';
+}
+
+function jdPhotoTileDragOver(ev) {
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = 'move';
+  if (ev.currentTarget && ev.currentTarget.classList) ev.currentTarget.classList.add('jd-photo-dragover');
+}
+
+function jdPhotoTileDragLeave(ev) {
+  if (ev.currentTarget && ev.currentTarget.classList) ev.currentTarget.classList.remove('jd-photo-dragover');
+}
+
+async function jdPhotoTileDrop(ev) {
+  ev.preventDefault();
+  const tile = ev.currentTarget;
+  tile.classList.remove('jd-photo-dragover');
+  let payload;
+  try {
+    payload = JSON.parse(ev.dataTransfer.getData('application/greenops-photo') || '{}');
+  } catch (err) {
+    return;
+  }
+  if (!payload || payload.kind == null || payload.id == null || payload.from == null) return;
+  const to = Number(tile.getAttribute('data-photo-idx'));
+  if (Number.isNaN(to) || Number(payload.from) === to) return;
+  if (payload.kind === 'job') {
+    await moveJobAttachmentStep(Number(payload.id), Number(payload.from), to);
+  } else if (payload.kind === 'recurring') {
+    await moveRecurringAttachmentStep(Number(payload.id), Number(payload.from), to);
+  }
+}
+
+async function moveRecurringAttachmentStep(ruleId, fromIdx, toIdx) {
+  if (fromIdx === toIdx) return;
+  try {
+    const res = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(ruleId));
+    if (!res.ok) throw new Error(await res.text());
+    const r = await res.json();
+    const atts = Array.isArray(r.attachments) ? r.attachments.slice() : [];
+    const next = reorderAttachmentsArray(atts, fromIdx, toIdx);
+    await persistRecurringAttachmentsFromList(ruleId, next);
+    toast('Photo order updated');
+    openRecurringDetail(ruleId, { setHash: false });
+  } catch (e) {
+    toast('Could not reorder', 'error');
+  }
+}
+
+function moveRecurringPhotoUp(ruleId, idx) {
+  moveRecurringAttachmentStep(ruleId, idx, idx - 1);
+}
+
+function moveRecurringPhotoDown(ruleId, idx) {
+  moveRecurringAttachmentStep(ruleId, idx, idx + 1);
+}
+
 function jobDetailPhotosHtml(j) {
   const att = Array.isArray(j.attachments) ? j.attachments : [];
-  if (!att.length) return '<p style="color:var(--muted);margin:.25rem 0">No photos yet.</p>';
+  if (!att.length) return '<p class="jd-photo-empty">No photos yet — add images below after a site visit.</p>';
+  const jid = Number(j.job_id);
+  const n = att.length;
   return '<div class="jd-photo-grid">' + att.map(function (a, i) {
     const u = esc(String(a.file_url || ''));
     const fn = esc(String(a.filename || 'photo'));
-    return '<div class="jd-photo-tile"><a href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt=""></a>' +
-      '<button type="button" class="btn btn-outline btn-sm" style="margin-top:.25rem;width:100%" onclick="removeJobAttachment(' + Number(j.job_id) + ',' + i + ')">Remove</button></div>';
+    const pos = i + 1;
+    const upDis = i === 0 ? ' disabled' : '';
+    const downDis = i >= n - 1 ? ' disabled' : '';
+    return '<figure class="jd-photo-tile" data-photo-idx="' + i + '" ondragover="jdPhotoTileDragOver(event)" ondragleave="jdPhotoTileDragLeave(event)" ondrop="jdPhotoTileDrop(event)">' +
+      '<div class="jd-photo-toolbar">' +
+      '<span class="jd-photo-pos" title="Order">' + pos + '</span>' +
+      '<button type="button" class="jd-photo-drag" draggable="true" aria-label="Drag to reorder" title="Drag to reorder" data-entity-kind="job" data-entity-id="' + jid + '" data-photo-from="' + i + '" ondragstart="jdPhotoHandleDragStart(event)">⋮⋮</button>' +
+      '<div class="jd-photo-order">' +
+      '<button type="button" class="btn btn-outline btn-sm"' + upDis + ' aria-label="Move up" onclick="moveJobPhotoUp(' + jid + ',' + i + ')">↑</button>' +
+      '<button type="button" class="btn btn-outline btn-sm"' + downDis + ' aria-label="Move down" onclick="moveJobPhotoDown(' + jid + ',' + i + ')">↓</button>' +
+      '</div></div>' +
+      '<a class="jd-photo-frame" href="' + u + '" target="_blank" rel="noopener noreferrer" title="Open full size"><img src="' + u + '" alt="" referrerpolicy="no-referrer" loading="lazy"></a>' +
+      '<figcaption class="jd-photo-caption" title="' + fn + '">' + fn + '</figcaption>' +
+      '<button type="button" class="btn btn-outline btn-sm jd-photo-remove" onclick="removeJobAttachment(' + jid + ',' + i + ')">Remove</button></figure>';
   }).join('') + '</div>';
 }
 
@@ -2427,7 +2752,7 @@ function jobDetailSpecHtml(j) {
         return '<tr><td style="padding:.2rem .4rem .2rem 0">' + esc(r.label || r.category || '') + '</td><td style="padding:.2rem 0;text-align:right;font-variant-numeric:tabular-nums">' + esc(moneyStr(Number(r.amount) || 0)) + '</td></tr>';
       }).join('') + '</tbody></table>';
   }
-  return tbl + desc + '<div style="margin:.75rem 0 .35rem"><strong>Photos</strong></div>' + jobDetailPhotosHtml(j) + '<div style="margin-top:.75rem"><strong>Extra costs</strong></div>' + extras;
+  return tbl + desc + '<div class="jd-photo-heading">Photos</div>' + jobDetailPhotosHtml(j) + '<div style="margin-top:.85rem"><strong>Extra costs</strong></div>' + extras;
 }
 
 async function openJobDetail(jobId, opts) {
@@ -2470,14 +2795,7 @@ async function removeJobAttachment(jobId, idx) {
     const j = await r.json();
     const atts = Array.isArray(j.attachments) ? j.attachments.slice() : [];
     atts.splice(idx, 1);
-    const pr = await fetch('/api/v1/jobs/' + encodeURIComponent(jobId), {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ attachments: atts }),
-    });
-    if (!pr.ok) throw new Error(await pr.text());
-    const ix = _jobs.findIndex(function (x) { return Number(x.job_id) === Number(jobId); });
-    if (ix >= 0) _jobs[ix] = await pr.json();
+    await persistJobAttachmentsFromList(jobId, atts);
     toast('Photo removed');
     openJobDetail(jobId, { setHash: false });
   } catch (e) {
@@ -2487,36 +2805,63 @@ async function removeJobAttachment(jobId, idx) {
 
 async function uploadJobDetailPhotos() {
   const inp = document.getElementById('jd-photo-input');
+  const prog = document.getElementById('jd-upload-progress');
+  const btn = document.getElementById('jd-upload-btn');
   if (_jdJobId == null || Number.isNaN(_jdJobId) || !inp || !inp.files || !inp.files.length) {
     toast('Choose one or more images', 'error');
     return;
   }
+  const files = Array.from(inp.files);
   const hint = document.getElementById('jd-storage-hint');
-  for (let i = 0; i < inp.files.length; i++) {
-    const fd = new FormData();
-    fd.append('file', inp.files[i]);
-    const r = await fetch('/api/v1/jobs/' + encodeURIComponent(_jdJobId) + '/attachments', { method: 'POST', body: fd });
-    if (!r.ok) {
-      let msg = await r.text();
-      try {
-        const o = JSON.parse(msg);
-        msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
-      } catch (e2) { /* keep */ }
-      if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
-      toast(msg || 'Upload failed', 'error');
-      return;
-    }
-    const ix = _jobs.findIndex(function (x) { return Number(x.job_id) === Number(_jdJobId); });
-    if (ix >= 0) {
-      try {
-        const jr = await fetch('/api/v1/jobs/' + encodeURIComponent(_jdJobId));
-        if (jr.ok) _jobs[ix] = await jr.json();
-      } catch (e3) { /* ignore */ }
-    }
+  const total = files.length;
+  if (prog) {
+    prog.hidden = false;
+    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
   }
-  inp.value = '';
-  toast('Photos uploaded');
-  openJobDetail(_jdJobId, { setHash: false });
+  if (btn) btn.disabled = true;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
+      const fd = new FormData();
+      fd.append('file', files[i]);
+      const r = await fetch('/api/v1/jobs/' + encodeURIComponent(_jdJobId) + '/attachments', { method: 'POST', body: fd });
+      if (!r.ok) {
+        let msg = await r.text();
+        try {
+          const o = JSON.parse(msg);
+          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
+        } catch (e2) { /* keep */ }
+        if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
+        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+        return;
+      }
+      const ix = _jobs.findIndex(function (x) { return Number(x.job_id) === Number(_jdJobId); });
+      if (ix >= 0) {
+        try {
+          const jr = await fetch('/api/v1/jobs/' + encodeURIComponent(_jdJobId));
+          if (jr.ok) _jobs[ix] = await jr.json();
+        } catch (e3) { /* ignore */ }
+      }
+    }
+    inp.value = '';
+    if (prog) {
+      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
+      setTimeout(function () {
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+      }, 1600);
+    }
+    toast('Photos uploaded');
+    openJobDetail(_jdJobId, { setHash: false });
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function recurringDetailHtml(r) {
@@ -2537,15 +2882,30 @@ function recurringDetailHtml(r) {
   const sum = computeRecurringRuleCostSummary(r, cust);
   const cost = '<div style="margin:.5rem 0;padding:.5rem .65rem;border:1px solid var(--border);border-radius:.4rem;background:var(--green-50)"><strong>Cost summary</strong><div style="margin-top:.35rem;font-variant-numeric:tabular-nums">Total ' + esc(moneyStr(sum.total)) + '</div></div>';
   const att = Array.isArray(r.attachments) ? r.attachments : [];
-  let photos = '<p style="color:var(--muted);margin:.25rem 0">No photos yet.</p>';
+  let photos = '<p class="jd-photo-empty">No photos yet — add images below for this schedule.</p>';
   if (att.length) {
+    const rid = Number(r.id);
+    const n = att.length;
     photos = '<div class="jd-photo-grid">' + att.map(function (a, i) {
       const u = esc(String(a.file_url || ''));
-      return '<div class="jd-photo-tile"><a href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt=""></a>' +
-        '<button type="button" class="btn btn-outline btn-sm" style="margin-top:.25rem;width:100%" onclick="removeRecurringAttachment(' + Number(r.id) + ',' + i + ')">Remove</button></div>';
+      const fn = esc(String(a.filename || 'photo'));
+      const pos = i + 1;
+      const upDis = i === 0 ? ' disabled' : '';
+      const downDis = i >= n - 1 ? ' disabled' : '';
+      return '<figure class="jd-photo-tile" data-photo-idx="' + i + '" ondragover="jdPhotoTileDragOver(event)" ondragleave="jdPhotoTileDragLeave(event)" ondrop="jdPhotoTileDrop(event)">' +
+        '<div class="jd-photo-toolbar">' +
+        '<span class="jd-photo-pos" title="Order">' + pos + '</span>' +
+        '<button type="button" class="jd-photo-drag" draggable="true" aria-label="Drag to reorder" title="Drag to reorder" data-entity-kind="recurring" data-entity-id="' + rid + '" data-photo-from="' + i + '" ondragstart="jdPhotoHandleDragStart(event)">⋮⋮</button>' +
+        '<div class="jd-photo-order">' +
+        '<button type="button" class="btn btn-outline btn-sm"' + upDis + ' aria-label="Move up" onclick="moveRecurringPhotoUp(' + rid + ',' + i + ')">↑</button>' +
+        '<button type="button" class="btn btn-outline btn-sm"' + downDis + ' aria-label="Move down" onclick="moveRecurringPhotoDown(' + rid + ',' + i + ')">↓</button>' +
+        '</div></div>' +
+        '<a class="jd-photo-frame" href="' + u + '" target="_blank" rel="noopener noreferrer" title="Open full size"><img src="' + u + '" alt="" referrerpolicy="no-referrer" loading="lazy"></a>' +
+        '<figcaption class="jd-photo-caption" title="' + fn + '">' + fn + '</figcaption>' +
+        '<button type="button" class="btn btn-outline btn-sm jd-photo-remove" onclick="removeRecurringAttachment(' + rid + ',' + i + ')">Remove</button></figure>';
     }).join('') + '</div>';
   }
-  return tbl + cost + '<div style="margin:.75rem 0 .35rem"><strong>Photos</strong></div>' + photos;
+  return tbl + cost + '<div class="jd-photo-heading">Photos</div>' + photos;
 }
 
 async function openRecurringDetail(ruleId, opts) {
@@ -2593,13 +2953,7 @@ async function removeRecurringAttachment(ruleId, idx) {
     const r = await res.json();
     const atts = Array.isArray(r.attachments) ? r.attachments.slice() : [];
     atts.splice(idx, 1);
-    const pr = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(ruleId), {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ attachments: atts }),
-    });
-    if (!pr.ok) throw new Error(await pr.text());
-    await loadRecurringRules();
+    await persistRecurringAttachmentsFromList(ruleId, atts);
     toast('Photo removed');
     openRecurringDetail(ruleId, { setHash: false });
   } catch (e) {
@@ -2609,30 +2963,57 @@ async function removeRecurringAttachment(ruleId, idx) {
 
 async function uploadRecurringDetailPhotos() {
   const inp = document.getElementById('rd-photo-input');
+  const prog = document.getElementById('rd-upload-progress');
+  const btn = document.getElementById('rd-upload-btn');
   if (_rdRuleId == null || Number.isNaN(_rdRuleId) || !inp || !inp.files || !inp.files.length) {
     toast('Choose one or more images', 'error');
     return;
   }
+  const files = Array.from(inp.files);
   const hint = document.getElementById('rd-storage-hint');
-  for (let i = 0; i < inp.files.length; i++) {
-    const fd = new FormData();
-    fd.append('file', inp.files[i]);
-    const r = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(_rdRuleId) + '/attachments', { method: 'POST', body: fd });
-    if (!r.ok) {
-      let msg = await r.text();
-      try {
-        const o = JSON.parse(msg);
-        msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
-      } catch (e2) { /* keep */ }
-      if (hint && r.status === 503) hint.style.display = '';
-      toast(msg || 'Upload failed', 'error');
-      return;
-    }
+  const total = files.length;
+  if (prog) {
+    prog.hidden = false;
+    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
   }
-  inp.value = '';
-  await loadRecurringRules();
-  toast('Photos uploaded');
-  openRecurringDetail(_rdRuleId, { setHash: false });
+  if (btn) btn.disabled = true;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
+      const fd = new FormData();
+      fd.append('file', files[i]);
+      const r = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(_rdRuleId) + '/attachments', { method: 'POST', body: fd });
+      if (!r.ok) {
+        let msg = await r.text();
+        try {
+          const o = JSON.parse(msg);
+          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
+        } catch (e2) { /* keep */ }
+        if (hint && r.status === 503) hint.style.display = '';
+        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+        return;
+      }
+    }
+    inp.value = '';
+    if (prog) {
+      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
+      setTimeout(function () {
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+      }, 1600);
+    }
+    await loadRecurringRules();
+    toast('Photos uploaded');
+    openRecurringDetail(_rdRuleId, { setHash: false });
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function renderJobs(arr) {
