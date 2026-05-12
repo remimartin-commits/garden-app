@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenOps — Gardening Business Manager</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <style>
@@ -36,7 +36,56 @@
       display: flex; flex-direction: column;
       z-index: 100;
     }
+    /* ── Mobile nav (drawer) ── */
+    .mobile-menu-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      margin-right: .35rem;
+      flex-shrink: 0;
+      border: 1.5px solid var(--border);
+      border-radius: .45rem;
+      background: var(--surface);
+      color: var(--green-700);
+      cursor: pointer;
+      font: inherit;
+      transition: background .15s, border-color .15s;
+    }
+    .mobile-menu-btn:hover { background: var(--green-50); border-color: var(--green-400); }
+    .mobile-menu-btn svg { width: 20px; height: 20px; }
+    .mobile-nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(0, 0, 0, 0.45);
+      touch-action: none;
+    }
+    body.mobile-nav-open { overflow: hidden; }
+    body.mobile-nav-open .mobile-nav-backdrop { display: block; }
+    .sidebar-close-mobile {
+      display: none;
+      position: absolute;
+      top: 1rem;
+      right: .75rem;
+      width: 2.25rem;
+      height: 2.25rem;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: .4rem;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: 1.35rem;
+      line-height: 1;
+      cursor: pointer;
+      font: inherit;
+    }
+    .sidebar-close-mobile:hover { background: rgba(255, 255, 255, 0.2); }
     .sidebar-brand {
+      position: relative;
       padding: 1.25rem 1rem 1rem;
       border-bottom: 1px solid rgba(255,255,255,.12);
     }
@@ -77,8 +126,17 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 1.5rem;
       gap: 1rem;
+      padding-left: max(1rem, env(safe-area-inset-left, 0px));
+      padding-right: max(1rem, env(safe-area-inset-right, 0px));
     }
-    .header-title { font-weight: 700; font-size: 1rem; color: var(--green-700); }
+    .header-title {
+      font-weight: 700; font-size: 1rem; color: var(--green-700);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .header-right { display: flex; align-items: center; gap: .75rem; }
     .avatar {
       width: 34px; height: 34px; border-radius: 50%;
@@ -170,7 +228,13 @@
     .jobs-day-banner-label { font-size: .84rem; font-weight: 700; color: var(--green-900); line-height: 1.35; }
 
     /* ── Page ── */
-    main { flex: 1; padding: 1.5rem; max-width: 1200px; width: 100%; }
+    main {
+      flex: 1;
+      padding: 1.5rem;
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+      max-width: 1200px;
+      width: 100%;
+    }
     .page { display: none; }
     .page.active { display: block; }
     .page-title { font-size: 1.4rem; font-weight: 800; color: var(--green-900); margin-bottom: 1.25rem; }
@@ -194,10 +258,15 @@
       border-radius: .75rem; padding: 1.25rem;
       margin-bottom: 1.25rem;
     }
-    .card-title { font-size: .95rem; font-weight: 700; color: var(--green-900); margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: .95rem; font-weight: 700; color: var(--green-900); margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
 
     /* ── Table ── */
-    .table-wrap { overflow-x: auto; }
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -0.25rem;
+      padding: 0 0.25rem;
+    }
     table { width: 100%; border-collapse: collapse; font-size: .88rem; }
     thead th { text-align: left; padding: .6rem .75rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); border-bottom: 2px solid var(--border); }
     tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
@@ -218,10 +287,12 @@
 
     /* ── Buttons ── */
     .btn {
-      display: inline-flex; align-items: center; gap: .4rem;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: .4rem;
       padding: .5rem 1rem; border-radius: .45rem; border: none;
       font: inherit; font-size: .85rem; font-weight: 600;
       cursor: pointer; transition: opacity .15s, background .15s;
+      touch-action: manipulation;
     }
     .btn:hover { opacity: .88; }
     .btn-primary { background: var(--green-700); color: #fff; }
@@ -269,6 +340,7 @@
       display: none; position: fixed; inset: 0;
       background: rgba(0,0,0,.4); z-index: 200;
       align-items: center; justify-content: center;
+      padding: max(0.75rem, env(safe-area-inset-top, 0px)) max(0.75rem, env(safe-area-inset-right, 0px)) max(0.75rem, env(safe-area-inset-bottom, 0px)) max(0.75rem, env(safe-area-inset-left, 0px));
     }
     .modal-backdrop.open { display: flex; }
     .modal {
@@ -279,12 +351,19 @@
     }
     .modal-title { font-size: 1.05rem; font-weight: 800; color: var(--green-900); margin-bottom: 1.1rem; }
     .modal.modal--wide { width: min(720px, calc(100vw - 2rem)); }
-    .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; }
+    .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; flex-wrap: wrap; }
 
     /* ── Toast ── */
     #toast {
-      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 300;
-      display: flex; flex-direction: column; gap: .5rem;
+      position: fixed;
+      bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+      right: max(1rem, env(safe-area-inset-right, 0px));
+      left: auto;
+      max-width: calc(100vw - 2rem);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
     }
     .toast-item {
       padding: .75rem 1.1rem; border-radius: .55rem;
@@ -319,6 +398,7 @@
     .cal-hint {
       font-size: .78rem; color: var(--muted); margin: -.4rem 0 1rem;
       line-height: 1.4;
+      word-break: break-word;
     }
     .cal-wrap {
       display: grid;
@@ -395,9 +475,12 @@
     /* ── Plant exchange subnav ── */
     .subnav { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
     .subnav a {
-      padding: .45rem 1rem; border-radius: .45rem; border: 1.5px solid var(--border);
+      padding: .55rem 1rem; min-height: 2.5rem;
+      border-radius: .45rem; border: 1.5px solid var(--border);
       background: var(--surface); color: var(--muted); font-size: .85rem; font-weight: 600;
       text-decoration: none; cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+      display: inline-flex; align-items: center;
+      touch-action: manipulation;
     }
     .subnav a:hover { color: var(--text); border-color: var(--green-400); }
     .subnav a.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
@@ -407,16 +490,142 @@
 
     @media (max-width: 640px) {
       :root { --sidebar-w: 0px; }
-      #sidebar { display: none; }
       #app { margin-left: 0; }
+
+      #sidebar {
+        display: flex;
+        transform: translateX(-105%);
+        transition: transform 0.28s ease;
+        box-shadow: 6px 0 32px rgba(0, 0, 0, 0.22);
+        z-index: 260;
+        width: min(288px, 88vw);
+      }
+      body.mobile-nav-open #sidebar {
+        transform: translateX(0);
+      }
+      .sidebar-brand { padding-right: 2.75rem; }
+      .mobile-menu-btn { display: inline-flex; }
+      .sidebar-close-mobile { display: inline-flex; }
+
+      .mobile-nav-backdrop {
+        inset: auto;
+        top: max(var(--header-h), 3.5rem);
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      header {
+        z-index: 120;
+        height: auto;
+        min-height: var(--header-h);
+        padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+        padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+      }
+      .header-title { font-size: 0.95rem; }
+
+      main { padding: 1rem 0.85rem; }
+
+      .weather-chip-text { max-width: min(11rem, 42vw); }
+
+      .weather-chip { min-height: 2.5rem; align-items: center; }
+      .avatar { min-width: 2.5rem; min-height: 2.5rem; }
+
+      nav.sidebar-nav a {
+        padding: 0.75rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .toolbar .search-box {
+        max-width: none;
+        min-width: 0;
+        width: 100%;
+      }
+      .toolbar .btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 2.5rem;
+      }
+
+      .card-title .btn {
+        min-height: 2.5rem;
+      }
+
+      .page-title { font-size: 1.2rem; margin-bottom: 1rem; }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem;
+      }
+      .stat-card { padding: 0.85rem 0.9rem; }
+      .stat-card .value { font-size: 1.55rem; }
+
+      .modal {
+        width: min(100%, calc(100vw - 1.25rem));
+        max-height: min(92vh, 100dvh);
+        padding: 1.1rem;
+      }
+      .modal.modal--wide {
+        width: min(100%, calc(100vw - 1.25rem));
+      }
+      .modal-actions {
+        justify-content: stretch;
+      }
+      .modal-actions .btn {
+        flex: 1;
+        min-width: 0;
+        min-height: 2.5rem;
+      }
+
+      .quick-list li {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .quick-list li > div:last-child {
+        align-self: stretch;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+
+      .wx-grid {
+        grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+      }
+      .wx-today-temps { font-size: 1.35rem; }
+
+      table { font-size: 0.82rem; }
+      thead th, tbody td { padding: 0.5rem 0.45rem; }
+
+      .cal-toolbar .cal-label { min-width: 0; flex: 1; }
+
+      #toast {
+        left: max(0.75rem, env(safe-area-inset-left, 0px));
+        right: max(0.75rem, env(safe-area-inset-right, 0px));
+        max-width: none;
+      }
+      .toast-item { word-break: break-word; }
+    }
+
+    @media (max-width: 380px) {
+      .stats-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
+<div id="mobile-nav-backdrop" class="mobile-nav-backdrop" onclick="closeMobileNav()" aria-hidden="true"></div>
+
 <!-- ══ SIDEBAR ══ -->
 <aside id="sidebar">
   <div class="sidebar-brand">
+    <button type="button" class="sidebar-close-mobile" onclick="closeMobileNav()" aria-label="Close menu">×</button>
     <h1>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a10 10 0 0 1 10 10c0 4-3 8-8 9.5M12 2C6.5 2 2 6.5 2 12c0 4 3 8 8 9.5M12 2v20M2 12h20"/></svg>
       GreenOps
@@ -459,6 +668,9 @@
 <!-- ══ MAIN APP ══ -->
 <div id="app">
   <header>
+    <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileNav()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
     <span class="header-title" id="page-title">Dashboard</span>
     <div class="header-right">
       <button type="button" class="weather-chip" id="weather-chip" onclick="openWeatherModal()" aria-haspopup="dialog" aria-controls="modal-weather" title="Open 14-day forecast">
@@ -1392,6 +1604,18 @@ let _modalDashDayKey = null;
 let _jobsDayFilterKey = null;
 
 // ══ NAVIGATION ══
+function toggleMobileNav() {
+  document.body.classList.toggle('mobile-nav-open');
+  const btn = document.getElementById('mobile-menu-btn');
+  if (btn) btn.setAttribute('aria-expanded', document.body.classList.contains('mobile-nav-open') ? 'true' : 'false');
+}
+
+function closeMobileNav() {
+  document.body.classList.remove('mobile-nav-open');
+  const btn = document.getElementById('mobile-menu-btn');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
 function nav(page) {
   if (page !== 'jobs') _jobsDayFilterKey = null;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1409,6 +1633,7 @@ function nav(page) {
   if (page === 'quotes') loadQuotes();
   if (page === 'invoices') loadInvoices();
   if (page === 'settings') loadSettings();
+  closeMobileNav();
 }
 
 document.querySelectorAll('[data-page]').forEach(a => {
@@ -1449,7 +1674,10 @@ function toast(msg, type = 'ok') {
 }
 
 // ══ MODAL ══
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function openModal(id) {
+  closeMobileNav();
+  document.getElementById(id).classList.add('open');
+}
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   if (id === 'modal-map') {
@@ -1459,6 +1687,10 @@ function closeModal(id) {
 }
 document.querySelectorAll('.modal-backdrop').forEach(b => {
   b.addEventListener('click', e => { if (e.target === b && b.id) closeModal(b.id); });
+});
+
+window.addEventListener('resize', () => {
+  if (window.matchMedia('(min-width: 641px)').matches) closeMobileNav();
 });
 
 // ══ MAP & LOCATION ══
