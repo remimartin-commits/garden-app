@@ -1686,7 +1686,22 @@ function closeModal(id) {
   }
 }
 document.querySelectorAll('.modal-backdrop').forEach(b => {
-  b.addEventListener('click', e => { if (e.target === b && b.id) closeModal(b.id); });
+  b.addEventListener('click', e => {
+    if (e.target !== b || !b.id) return;
+    if (b.id === 'modal-new-quote') return;
+    closeModal(b.id);
+  });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const openBackdrop = document.querySelector('.modal-backdrop.open');
+  if (openBackdrop && openBackdrop.id) {
+    if (openBackdrop.id === 'modal-new-quote') return;
+    closeModal(openBackdrop.id);
+    return;
+  }
+  closeMobileNav();
 });
 
 window.addEventListener('resize', () => {
