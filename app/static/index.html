@@ -790,7 +790,7 @@
                   <th>Property</th>
                   <th>Description</th>
                   <th>Status</th>
-                  <th>Costs</th>
+                  <th>Extra costs</th>
                   <th></th>
                 </tr>
               </thead>
@@ -809,15 +809,15 @@
             <button type="button" class="btn btn-primary btn-sm" onclick="openRecurringModal(null)">Add schedule</button>
           </div>
           <p style="font-size:.82rem;color:var(--muted);margin:-.35rem 0 .85rem;line-height:1.45">
-            Weekly: pick weekday (Mon–Sun). Monthly: pick day-of-month (1–28). Preview shows the next five generated dates (not saved as jobs until you convert them).
+            Weekly: pick weekday (Mon–Sun). Monthly: pick day-of-month (1–28). Track <strong>instances worked</strong> and see cost totals from the linked customer’s pricing (same logic as completed jobs). Preview shows the next five generated dates (not saved as jobs until you convert them).
           </p>
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Description</th><th>Cadence</th><th>Start</th><th>Repeat</th><th>Property</th><th>Customer</th><th>Status</th><th></th></tr>
+                <tr><th>Description</th><th>Cadence</th><th>Start</th><th>Repeat</th><th>Property</th><th>Customer</th><th>Instances</th><th>Total costs</th><th>Status</th><th></th></tr>
               </thead>
               <tbody id="recurring-rules-tbody">
-                <tr><td colspan="8" class="loading">Loading recurring rules…</td></tr>
+                <tr><td colspan="10" class="loading">Loading recurring rules…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1056,7 +1056,7 @@
     <div class="form-grid">
       <div class="field">
         <label>Customer</label>
-        <select id="ej-customer"><option value="">Select customer…</option></select>
+        <select id="ej-customer" onchange="syncEjCompletedCostSummary()"><option value="">Select customer…</option></select>
       </div>
       <div class="field">
         <label>Status</label>
@@ -1070,7 +1070,7 @@
       </div>
       <div class="field" id="ej-wrap-hours-worked" style="grid-column:1/-1;display:none">
         <label>Hours worked <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
-        <input type="number" id="ej-hours-worked" min="0" step="0.25" placeholder="e.g. 2.5">
+        <input type="number" id="ej-hours-worked" min="0" step="0.25" placeholder="e.g. 2.5" oninput="syncEjCompletedCostSummary()">
       </div>
       <div class="field">
         <label>Who's job <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
@@ -1086,8 +1086,8 @@
         <textarea id="ej-description" placeholder="Describe the job…"></textarea>
       </div>
       <div class="field" style="grid-column:1/-1">
-        <label>Costs</label>
-        <p style="font-size:.78rem;color:var(--muted);margin:0 0 .5rem">Line items with a category (pick a preset or type your own), description, and amount.</p>
+        <label>Extra costs</label>
+        <p style="font-size:.78rem;color:var(--muted);margin:0 0 .5rem">Materials, fuel, and other line items (category presets or your own text), plus description and amount.</p>
         <datalist id="ej-cost-cat-presets">
           <option value="materials"></option>
           <option value="fuel"></option>
@@ -1098,7 +1098,12 @@
           <option value="custom"></option>
         </datalist>
         <div id="ej-costs-rows"></div>
-        <button type="button" class="btn btn-outline btn-sm" onclick="addEjCostRow()" style="margin-top:.35rem">Add cost line</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addEjCostRow()" style="margin-top:.35rem">Add extra cost line</button>
+      </div>
+      <div class="field" id="ej-wrap-completed-cost-summary" style="grid-column:1/-1;display:none">
+        <label>Completed job — total costs</label>
+        <p style="font-size:.76rem;color:var(--muted);margin:0 0 .4rem">Uses this customer’s agreed job or hourly rate, fuel per visit, hours worked, and extra cost lines.</p>
+        <div id="ej-completed-cost-summary-body" style="font-size:.88rem;line-height:1.45;border:1px solid var(--border);border-radius:.45rem;padding:.65rem .75rem;background:var(--green-50)"></div>
       </div>
     </div>
     <div class="modal-actions">
@@ -1555,9 +1560,11 @@
         <label>Customer (optional)</label>
         <select id="rr-customer"><option value="">—</option></select>
       </div>
-      <div class="field">
-        <label>Property ID *</label>
-        <input type="number" id="rr-property-id" min="1" step="1" placeholder="e.g. 201">
+      <div class="field" style="grid-column:1/-1">
+        <label>Property *</label>
+        <input type="number" id="rr-property-id" min="1" step="1" placeholder="e.g. 201" oninput="scheduleRrPropertyAddressPreview()" onblur="refreshRrPropertyAddressPreview()">
+        <p id="rr-property-address-preview" style="font-size:.82rem;color:var(--green-800);margin:.4rem 0 0;line-height:1.45;min-height:1.2em"></p>
+        <span style="font-size:.76rem;color:var(--muted);display:block;margin-top:.25rem">Enter the property ID from your directory; matching addresses show here and in the list.</span>
       </div>
       <div class="field">
         <label>Cadence *</label>
@@ -1589,6 +1596,26 @@
       <div class="field" style="grid-column:1/-1">
         <label>Description / notes *</label>
         <textarea id="rr-description" placeholder="e.g. Fortnightly lawn & edges"></textarea>
+      </div>
+      <div class="field">
+        <label>Instances worked</label>
+        <input type="number" id="rr-instances-worked" min="0" step="1" value="0" oninput="syncRrRecurringCostSummary()">
+        <span style="font-size:.76rem;color:var(--muted);display:block;margin-top:.2rem">How many visits have been completed on this schedule (drives labor, fuel, and totals).</span>
+      </div>
+      <div class="field" id="rr-wrap-hours-per-instance" style="display:none">
+        <label>Hours per instance</label>
+        <input type="number" id="rr-hours-per-instance" min="0" step="0.25" placeholder="Default 1 hr" oninput="syncRrRecurringCostSummary()">
+        <span style="font-size:.76rem;color:var(--muted);display:block;margin-top:.2rem">Shown when the customer is <strong>hourly</strong>: labor = instances × hours × rate.</span>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Cost summary</label>
+        <div id="rr-recurring-cost-summary-body" style="font-size:.85rem;line-height:1.45;border:1px solid var(--border);border-radius:.45rem;padding:.65rem .75rem;background:var(--green-50)"></div>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Extra costs</label>
+        <p style="font-size:.78rem;color:var(--muted);margin:0 0 .5rem">Line items (category, description, amount) tracked on this recurring schedule.</p>
+        <div id="rr-extra-costs-rows"></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addRrEcRow()" style="margin-top:.35rem">Add extra cost line</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -1810,6 +1837,7 @@ function syncEjJobTimeFields() {
   const showHw = st === 'in progress' || st === 'completed';
   wEst.style.display = showEst ? '' : 'none';
   wHw.style.display = showHw ? '' : 'none';
+  syncEjCompletedCostSummary();
 }
 
 function openMapModal(address, contextLabel) {
@@ -2288,8 +2316,8 @@ function renderJobs(arr) {
       <td>${j.assignee && String(j.assignee).trim() ? esc(String(j.assignee).trim()) : '—'}</td>
       <td>${esc(j.property?.address || j.property_info?.address || '—')}</td>
       <td>${esc((j.description || '').slice(0, 60))}</td>
-      <td>${statusBadge(j.workflow_status)}</td>
-      <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${formatJobCostsSummary(j)}</td>
+      <td>${formatJobStatusColumnHtml(j)}</td>
+      <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${formatJobsTableExtraCostsCell(j)}</td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="openMapForJob(${j.job_id})">Map</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditJob(${j.job_id})">Edit</button>
@@ -2335,7 +2363,7 @@ function renderJobsList() {
       String(formatJobTimeExtras(j)).toLowerCase().includes(ql) ||
       String(j.estimated_duration_minutes != null ? j.estimated_duration_minutes : '').includes(ql) ||
       String(j.hours_worked != null ? j.hours_worked : '').includes(ql) ||
-      String(jobCostsSearchText(j)).toLowerCase().includes(ql)
+      String(jobExtraCostsSearchText(j)).toLowerCase().includes(ql)
     );
   }
   renderJobs(list);
@@ -2345,16 +2373,192 @@ function filterJobs(_q) {
   renderJobsList();
 }
 
-function formatJobCostsSummary(j) {
-  const rows = Array.isArray(j.job_costs) ? j.job_costs : [];
-  if (!rows.length) return '—';
-  const t = rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-  return '$' + t.toFixed(2);
+function formatJobsTableExtraCostsCell(j) {
+  const rows = getJobExtraCostsArr(j);
+  const extSum = rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  return rows.length ? esc(moneyStr(extSum)) : '—';
 }
 
-function jobCostsSearchText(j) {
-  const rows = Array.isArray(j.job_costs) ? j.job_costs : [];
-  return rows.map(r => [r.category, r.label, r.amount].filter(x => x != null && x !== '').join(' ')).join(' ');
+function jobExtraCostsSearchText(j) {
+  const rows = getJobExtraCostsArr(j);
+  const base = rows.map(r => [r.category, r.label, r.amount].filter(x => x != null && x !== '').join(' ')).join(' ');
+  const st = String(j.workflow_status || '').trim().toLowerCase();
+  if (st !== 'completed') return base;
+  const cust = resolveCustomerForJob(j);
+  const s = computeCompletedJobCostSummary(j, cust);
+  return base + ' total ' + String(s.total);
+}
+
+function getJobExtraCostsArr(job) {
+  if (!job) return [];
+  if (Array.isArray(job.extra_costs)) return job.extra_costs;
+  if (Array.isArray(job.job_costs)) return job.job_costs;
+  return [];
+}
+
+function resolveCustomerForJob(job) {
+  const cid = job.customer_id != null ? Number(job.customer_id) : (job.customer && job.customer.id != null ? Number(job.customer.id) : null);
+  if (cid == null || Number.isNaN(cid)) return null;
+  return _customers.find(c => Number(c.id) === cid) || null;
+}
+
+function moneyStr(n) {
+  const x = Number(n);
+  if (Number.isNaN(x)) return '$0.00';
+  return '$' + x.toFixed(2);
+}
+
+function computeCompletedJobCostSummary(job, custOpt) {
+  const cust = custOpt !== undefined ? custOpt : resolveCustomerForJob(job);
+  const hourly = cust && String(cust.price_agreed_type || 'fixed').toLowerCase() === 'hourly';
+  const rate = cust && cust.price_agreed_amount != null && !Number.isNaN(Number(cust.price_agreed_amount)) ? Number(cust.price_agreed_amount) : 0;
+  const fuel = cust && cust.fuel_cost != null && !Number.isNaN(Number(cust.fuel_cost)) ? Number(cust.fuel_cost) : 10;
+  const hwRaw = job.hours_worked;
+  const hw = hwRaw != null && hwRaw !== '' && !Number.isNaN(Number(hwRaw)) ? Number(hwRaw) : 0;
+  const extrasRows = Array.isArray(job.extra_costs) ? job.extra_costs : (Array.isArray(job.job_costs) ? job.job_costs : []);
+  const extrasSum = extrasRows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const baseLabel = hourly ? 'Labor (hours × hourly rate)' : 'Job price (agreed)';
+  const baseAmt = hourly ? hw * rate : rate;
+  const baseDetail = hourly ? (hw + ' h × $' + rate.toFixed(2) + '/hr') : (cust && cust.price_agreed_type ? String(cust.price_agreed_type) : '—');
+  const lines = [
+    { label: baseLabel, amount: baseAmt, detail: baseDetail },
+    { label: 'Fuel (per visit)', amount: fuel, detail: 'Customer default' },
+    { label: 'Extra costs (lines above)', amount: extrasSum, detail: extrasRows.length ? (extrasRows.length + ' line(s)') : '—' },
+  ];
+  const total = lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
+  return { lines, total, hourly, hw, rate, fuel, extrasSum };
+}
+
+/** Merge API schedule row with full job from `_jobs` so extra costs / customer match list view. */
+function jobLikeFromScheduleSlot(s) {
+  const jid = s.job_id != null ? Number(s.job_id) : null;
+  if (jid != null && !Number.isNaN(jid)) {
+    const full = _jobs.find(x => Number(x.job_id) === jid);
+    if (full) return full;
+  }
+  return {
+    job_id: s.job_id,
+    customer_id: (s.customer && s.customer.id != null) ? Number(s.customer.id) : null,
+    customer: s.customer || (s.customer_name ? { name: s.customer_name } : null),
+    workflow_status: s.status,
+    hours_worked: s.hours_worked,
+    extra_costs: [],
+  };
+}
+
+/** Status badge; under **Completed**, show full cost total (job/hourly + fuel + extras). */
+function formatJobStatusColumnHtml(jobLike) {
+  const raw = jobLike.workflow_status != null ? jobLike.workflow_status : jobLike.status;
+  const badge = statusBadge(raw);
+  const st = String(raw || '').trim().toLowerCase();
+  if (st !== 'completed') return badge;
+  const cust = resolveCustomerForJob(jobLike);
+  const sum = computeCompletedJobCostSummary(jobLike, cust);
+  return '<div style="line-height:1.4">' + badge + '<div style="margin-top:.35rem;font-size:.78rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--green-900)">Total ' + esc(moneyStr(sum.total)) + '</div></div>';
+}
+
+function syncEjCompletedCostSummary() {
+  const wrap = document.getElementById('ej-wrap-completed-cost-summary');
+  const body = document.getElementById('ej-completed-cost-summary-body');
+  const statusEl = document.getElementById('ej-status');
+  if (!wrap || !body || !statusEl) return;
+  const st = String(statusEl.value || '').trim().toLowerCase();
+  if (st !== 'completed') {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = '';
+  const custId = (document.getElementById('ej-customer') && document.getElementById('ej-customer').value || '').trim();
+  const cust = custId ? _customers.find(c => String(c.id) === String(custId)) : null;
+  const hwRaw = (document.getElementById('ej-hours-worked') && document.getElementById('ej-hours-worked').value || '').trim();
+  const hw = hwRaw === '' ? null : parseFloat(hwRaw);
+  const extras = collectEjCostRows();
+  const fakeJob = {
+    customer_id: custId ? Number(custId) : null,
+    hours_worked: hw == null || Number.isNaN(hw) ? null : hw,
+    workflow_status: 'Completed',
+    extra_costs: extras,
+  };
+  const s = computeCompletedJobCostSummary(fakeJob, cust);
+  const rowsHtml = s.lines.map(l => {
+    const d = l.detail != null ? String(l.detail) : '';
+    return '<tr><td style="padding:.25rem .35rem .25rem 0">' + esc(l.label) + '</td><td style="padding:.25rem 0;color:var(--muted);font-size:.8rem;text-align:right">' + esc(d) + '</td><td style="padding:.25rem 0 0 .5rem;text-align:right;font-variant-numeric:tabular-nums">' + esc(moneyStr(l.amount)) + '</td></tr>';
+  }).join('');
+  body.innerHTML = '<table style="width:100%;border-collapse:collapse;margin:0 0 .45rem"><tbody>' + rowsHtml + '</tbody></table><div style="font-weight:800;font-variant-numeric:tabular-nums">Total ' + esc(moneyStr(s.total)) + '</div>';
+}
+
+function computeRecurringRuleCostSummary(rule, custOpt) {
+  const cust = custOpt !== undefined ? custOpt : resolveCustomerForJob(rule);
+  const n = Math.max(0, Math.floor(Number(rule.instances_worked) || 0));
+  const hourly = cust && String(cust.price_agreed_type || 'fixed').toLowerCase() === 'hourly';
+  const rate = cust && cust.price_agreed_amount != null && !Number.isNaN(Number(cust.price_agreed_amount)) ? Number(cust.price_agreed_amount) : 0;
+  const fuelEach = cust && cust.fuel_cost != null && !Number.isNaN(Number(cust.fuel_cost)) ? Number(cust.fuel_cost) : 10;
+  let hpi = rule.hours_per_instance;
+  if (hpi != null && hpi !== '' && !Number.isNaN(Number(hpi)) && Number(hpi) > 0) hpi = Number(hpi);
+  else hpi = 1;
+  const baseAmt = hourly ? (n * hpi * rate) : (n * rate);
+  const extrasRows = Array.isArray(rule.extra_costs) ? rule.extra_costs : [];
+  const extrasSum = extrasRows.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+  const fuelTotal = n * fuelEach;
+  const total = baseAmt + fuelTotal + extrasSum;
+  const baseLabel = hourly ? 'Labor (instances × hrs × rate)' : 'Job price (instances × agreed)';
+  const baseDetail = hourly ? (n + ' × ' + hpi + 'h × ' + moneyStr(rate) + '/h') : (n ? (n + ' × ' + moneyStr(rate)) : '—');
+  return {
+    total, n, baseAmt, fuelTotal, extrasSum, hourly, rate, hpi, fuelEach,
+    lines: [
+      { label: baseLabel, amount: baseAmt, detail: baseDetail },
+      { label: 'Fuel (instances × per visit)', amount: fuelTotal, detail: n ? (n + ' × ' + moneyStr(fuelEach)) : '—' },
+      { label: 'Extra costs', amount: extrasSum, detail: extrasRows.length ? (extrasRows.length + ' line(s)') : '—' },
+    ],
+  };
+}
+
+function formatRecurringInstancesCell(r) {
+  return String(Math.max(0, Math.floor(Number(r.instances_worked) || 0)));
+}
+
+function formatRecurringTotalCostsCell(r) {
+  const cust = resolveCustomerForJob(r);
+  const s = computeRecurringRuleCostSummary(r, cust);
+  return '<div style="line-height:1.35"><span style="font-size:.72rem;color:var(--muted)">extras ' + esc(moneyStr(s.extrasSum)) + '</span><br><strong style="font-variant-numeric:tabular-nums">' + esc('Total ' + moneyStr(s.total)) + '</strong></div>';
+}
+
+function syncRrHoursPerInstanceVisibility() {
+  const wrap = document.getElementById('rr-wrap-hours-per-instance');
+  const sel = document.getElementById('rr-customer');
+  if (!wrap || !sel) return;
+  const custId = sel.value;
+  const cust = custId ? _customers.find(c => String(c.id) === custId) : null;
+  const hourly = cust && String(cust.price_agreed_type || 'fixed').toLowerCase() === 'hourly';
+  wrap.style.display = hourly ? '' : 'none';
+}
+
+function collectRrRuleLikeForSummary() {
+  const custId = (document.getElementById('rr-customer') && document.getElementById('rr-customer').value || '').trim();
+  const instEl = document.getElementById('rr-instances-worked');
+  const rawI = instEl && instEl.value != null ? String(instEl.value).trim() : '';
+  const n = rawI === '' ? 0 : Math.max(0, parseInt(rawI, 10) || 0);
+  const hRaw = (document.getElementById('rr-hours-per-instance') && document.getElementById('rr-hours-per-instance').value || '').trim();
+  const hpi = hRaw === '' ? null : parseFloat(hRaw);
+  return {
+    customer_id: custId ? Number(custId) : null,
+    instances_worked: n,
+    hours_per_instance: hpi != null && !Number.isNaN(hpi) && hpi > 0 ? hpi : null,
+    extra_costs: collectRrEcRows(),
+  };
+}
+
+function syncRrRecurringCostSummary() {
+  const body = document.getElementById('rr-recurring-cost-summary-body');
+  if (!body) return;
+  const rule = collectRrRuleLikeForSummary();
+  const cust = resolveCustomerForJob(rule);
+  const s = computeRecurringRuleCostSummary(rule, cust);
+  const rowsHtml = s.lines.map(l => {
+    const d = l.detail != null ? String(l.detail) : '';
+    return '<tr><td style="padding:.25rem .35rem .25rem 0">' + esc(l.label) + '</td><td style="padding:.25rem 0;color:var(--muted);font-size:.78rem;text-align:right">' + esc(d) + '</td><td style="padding:.25rem 0 0 .5rem;text-align:right;font-variant-numeric:tabular-nums">' + esc(moneyStr(l.amount)) + '</td></tr>';
+  }).join('');
+  body.innerHTML = '<table style="width:100%;border-collapse:collapse;margin:0 0 .45rem"><tbody>' + rowsHtml + '</tbody></table><div style="font-weight:800;font-variant-numeric:tabular-nums">Total ' + esc(moneyStr(s.total)) + '</div>';
 }
 
 function ejCostRowHtml(row) {
@@ -2365,17 +2569,17 @@ function ejCostRowHtml(row) {
   return `<div class="ej-cost-row" style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:flex-end;margin-bottom:.5rem">
     <div class="field" style="margin:0;min-width:7.5rem;flex:0 1 8rem">
       <label style="font-size:.75rem;color:var(--muted)">Category</label>
-      <input type="text" class="ej-cost-cat" list="ej-cost-cat-presets" autocomplete="off" value="${esc(cat)}" placeholder="materials">
+      <input type="text" class="ej-cost-cat" list="ej-cost-cat-presets" autocomplete="off" value="${esc(cat)}" placeholder="materials" oninput="syncEjCompletedCostSummary()">
     </div>
     <div class="field" style="margin:0;flex:1;min-width:10rem">
       <label style="font-size:.75rem;color:var(--muted)">Item</label>
-      <input type="text" class="ej-cost-label" placeholder="Material, line item, notes…" value="${esc(lab)}">
+      <input type="text" class="ej-cost-label" placeholder="Material, line item, notes…" value="${esc(lab)}" oninput="syncEjCompletedCostSummary()">
     </div>
     <div class="field" style="margin:0;display:flex;align-items:flex-end;gap:.35rem;flex:0 0 auto">
       <span style="padding-bottom:.45rem;font-weight:600;color:var(--muted)">$</span>
       <div style="margin:0;width:5.5rem">
         <label style="font-size:.75rem;color:var(--muted)">Amount</label>
-        <input type="number" class="ej-cost-amt" min="0" step="0.01" placeholder="0.00" value="${esc(amt)}">
+        <input type="number" class="ej-cost-amt" min="0" step="0.01" placeholder="0.00" value="${esc(amt)}" oninput="syncEjCompletedCostSummary()">
       </div>
     </div>
     <button type="button" class="btn btn-outline btn-sm" onclick="removeEjCostRow(this)" style="align-self:flex-end">Remove</button>
@@ -2389,6 +2593,7 @@ function addEjCostRow(row) {
     ? { category: 'materials', label: 'Material', amount: '' }
     : row;
   wrap.insertAdjacentHTML('beforeend', ejCostRowHtml(r));
+  syncEjCompletedCostSummary();
 }
 
 function removeEjCostRow(btn) {
@@ -2398,19 +2603,20 @@ function removeEjCostRow(btn) {
   row.remove();
   if (!wrap.querySelector('.ej-cost-row')) {
     addEjCostRow({ category: 'materials', label: 'Material', amount: '' });
-  }
+  } else syncEjCompletedCostSummary();
 }
 
 function renderEjCostRows(job) {
   const wrap = document.getElementById('ej-costs-rows');
   if (!wrap) return;
   wrap.innerHTML = '';
-  const rows = Array.isArray(job.job_costs) ? job.job_costs : [];
+  const rows = getJobExtraCostsArr(job);
   if (!rows.length) {
     addEjCostRow({ category: 'materials', label: 'Material', amount: '' });
   } else {
     rows.forEach(r => addEjCostRow(r));
   }
+  syncEjCompletedCostSummary();
 }
 
 function collectEjCostRows() {
@@ -2513,7 +2719,7 @@ async function saveJobEdit() {
       payload.hours_worked = n;
     }
   }
-  payload.job_costs = collectEjCostRows();
+  payload.extra_costs = collectEjCostRows();
   try {
     const r = await fetch('/api/v1/jobs/' + encodeURIComponent(jid), {
       method: 'PATCH',
@@ -2829,6 +3035,7 @@ function populateCustomerDropdowns() {
     const cur = sel.value;
     sel.innerHTML = '<option value="">Select customer…</option>' +
       _customers.map(c => `<option value="${c.id}" ${c.id == cur ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+    if (id === 'ej-customer') sel.onchange = function () { syncEjCompletedCostSummary(); };
   });
 }
 
@@ -2999,7 +3206,7 @@ function renderWeekFromSchedule(data) {
       <td>${esc(s.job_description || s.description || (s.job_id != null ? 'Job #' + s.job_id : '—'))}</td>
       <td>${esc(s.customer_name || s.customer?.name || '—')}</td>
       <td>${whoDisp}</td>
-      <td>${statusBadge(s.status)}</td>
+      <td>${formatJobStatusColumnHtml(jobLikeFromScheduleSlot(s))}</td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditJob(${Number(s.job_id)})">Edit</button>
         ${jid != null && !Number.isNaN(jid) ? `<button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${jid})">Remove</button>` : ''}
@@ -3035,10 +3242,143 @@ function renderWeekFromSchedule(data) {
   el.innerHTML = body;
 }
 
+function rrEcRowHtml(row) {
+  const r = row || {};
+  const cat = r.category != null ? String(r.category) : 'materials';
+  const lab = r.label != null ? String(r.label) : '';
+  const amt = r.amount != null && r.amount !== '' ? String(r.amount) : '';
+  return `<div class="rr-ec-row" style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:flex-end;margin-bottom:.5rem">
+    <div class="field" style="margin:0;min-width:7.5rem;flex:0 1 8rem">
+      <label style="font-size:.75rem;color:var(--muted)">Category</label>
+      <input type="text" class="rr-ec-cat" list="ej-cost-cat-presets" autocomplete="off" value="${esc(cat)}" placeholder="materials" oninput="syncRrRecurringCostSummary()">
+    </div>
+    <div class="field" style="margin:0;flex:1;min-width:10rem">
+      <label style="font-size:.75rem;color:var(--muted)">Item</label>
+      <input type="text" class="rr-ec-label" placeholder="Material, line item, notes…" value="${esc(lab)}" oninput="syncRrRecurringCostSummary()">
+    </div>
+    <div class="field" style="margin:0;display:flex;align-items:flex-end;gap:.35rem;flex:0 0 auto">
+      <span style="padding-bottom:.45rem;font-weight:600;color:var(--muted)">$</span>
+      <div style="margin:0;width:5.5rem">
+        <label style="font-size:.75rem;color:var(--muted)">Amount</label>
+        <input type="number" class="rr-ec-amt" min="0" step="0.01" placeholder="0.00" value="${esc(amt)}" oninput="syncRrRecurringCostSummary()">
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="removeRrEcRow(this)" style="align-self:flex-end">Remove</button>
+  </div>`;
+}
+
+function addRrEcRow(row) {
+  const wrap = document.getElementById('rr-extra-costs-rows');
+  if (!wrap) return;
+  const r = row === undefined || row === null
+    ? { category: 'materials', label: 'Material', amount: '' }
+    : row;
+  wrap.insertAdjacentHTML('beforeend', rrEcRowHtml(r));
+  syncRrRecurringCostSummary();
+}
+
+function removeRrEcRow(btn) {
+  const row = btn && btn.closest && btn.closest('.rr-ec-row');
+  const wrap = document.getElementById('rr-extra-costs-rows');
+  if (!row || !wrap) return;
+  row.remove();
+  if (!wrap.querySelector('.rr-ec-row')) {
+    addRrEcRow({ category: 'materials', label: 'Material', amount: '' });
+  } else syncRrRecurringCostSummary();
+}
+
+function renderRrEcRows(list) {
+  const wrap = document.getElementById('rr-extra-costs-rows');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const rows = Array.isArray(list) ? list : [];
+  if (!rows.length) addRrEcRow({ category: 'materials', label: 'Material', amount: '' });
+  else rows.forEach(r => addRrEcRow(r));
+  syncRrRecurringCostSummary();
+}
+
+function collectRrEcRows() {
+  const wrap = document.getElementById('rr-extra-costs-rows');
+  if (!wrap) return [];
+  const out = [];
+  wrap.querySelectorAll('.rr-ec-row').forEach(row => {
+    const catRaw = row.querySelector('.rr-ec-cat');
+    const labRaw = row.querySelector('.rr-ec-label');
+    const amtRaw = row.querySelector('.rr-ec-amt');
+    const cat = (catRaw && catRaw.value || '').trim();
+    const label = (labRaw && labRaw.value || '').trim();
+    const raw = (amtRaw && amtRaw.value || '').trim();
+    const parsed = raw === '' ? 0 : parseFloat(raw);
+    const amount = Number.isNaN(parsed) ? 0 : parsed;
+    if (!label && (raw === '' || amount === 0)) return;
+    const category = cat || 'materials';
+    out.push({
+      category,
+      label: label || (String(category).toLowerCase() === 'materials' ? 'Material' : ''),
+      amount,
+    });
+  });
+  return out;
+}
+
 function recurringCustomerName(customerId) {
   if (customerId == null) return '—';
   const c = _customers.find(x => Number(x.id) === Number(customerId));
   return c ? c.name : '#' + customerId;
+}
+
+function recurringPropertyCell(r) {
+  const addr = r.property_address && String(r.property_address).trim();
+  const pid = r.property_id != null ? r.property_id : null;
+  if (addr) {
+    return '<span style="font-weight:600">' + esc(addr) + '</span>' +
+      (pid != null ? '<br><span style="font-size:.72rem;color:var(--muted)">#' + esc(String(pid)) + '</span>' : '');
+  }
+  if (pid != null) return '#' + esc(String(pid));
+  return '—';
+}
+
+let _rrPropertyPreviewTimer = null;
+function scheduleRrPropertyAddressPreview() {
+  clearTimeout(_rrPropertyPreviewTimer);
+  _rrPropertyPreviewTimer = setTimeout(refreshRrPropertyAddressPreview, 300);
+}
+
+async function refreshRrPropertyAddressPreview() {
+  const out = document.getElementById('rr-property-address-preview');
+  const inp = document.getElementById('rr-property-id');
+  if (!out || !inp) return;
+  const raw = String(inp.value || '').trim();
+  if (!raw) {
+    out.textContent = '';
+    out.style.color = 'var(--green-800)';
+    return;
+  }
+  const id = parseInt(raw, 10);
+  if (Number.isNaN(id) || id < 1) {
+    out.textContent = '';
+    out.style.color = 'var(--green-800)';
+    return;
+  }
+  try {
+    const r = await fetch('/api/v1/properties/' + encodeURIComponent(id));
+    if (!r.ok) {
+      out.textContent = 'No address on file for property #' + id + '.';
+      out.style.color = 'var(--muted)';
+      return;
+    }
+    const p = await r.json();
+    const a = (p.address && String(p.address).trim()) || '';
+    if (a) {
+      out.textContent = a;
+      out.style.color = 'var(--green-800)';
+    } else {
+      out.textContent = 'Property #' + id + ' has no address.';
+      out.style.color = 'var(--muted)';
+    }
+  } catch {
+    out.textContent = '';
+  }
 }
 
 function recurringRepeatLabel(r) {
@@ -3063,7 +3403,7 @@ async function loadRecurringRules() {
 function renderRecurringRulesTable() {
   const tbody = document.getElementById('recurring-rules-tbody');
   if (!_recurringRules.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <p>No recurring schedules yet</p></div></td></tr>`;
     return;
@@ -3076,8 +3416,10 @@ function renderRecurringRulesTable() {
       <td>${esc(cad)}</td>
       <td>${esc(r.start_date || '—')}</td>
       <td>${esc(recurringRepeatLabel(r))}</td>
-      <td>${r.property_id != null ? '#' + esc(String(r.property_id)) : '—'}</td>
+      <td>${recurringPropertyCell(r)}</td>
       <td>${esc(recurringCustomerName(r.customer_id))}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${esc(formatRecurringInstancesCell(r))}</td>
+      <td style="white-space:nowrap">${formatRecurringTotalCostsCell(r)}</td>
       <td>${paused ? '<span class="badge badge-gray">Paused</span>' : '<span class="badge badge-green">Active</span>'}</td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="previewRecurringRule(${r.id})">Preview</button>
@@ -3094,6 +3436,7 @@ function populateRecurringCustomerSelect(selectedId) {
   const cur = selectedId != null ? String(selectedId) : '';
   sel.innerHTML = '<option value="">—</option>' +
     _customers.map(c => `<option value="${c.id}" ${String(c.id) === cur ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  sel.onchange = function () { syncRrHoursPerInstanceVisibility(); syncRrRecurringCostSummary(); };
 }
 
 function openRecurringModal(id) {
@@ -3109,6 +3452,9 @@ function openRecurringModal(id) {
     document.getElementById('rr-start-date').value = today;
     document.getElementById('rr-description').value = '';
     document.getElementById('rr-customer').value = '';
+    document.getElementById('rr-instances-worked').value = '0';
+    document.getElementById('rr-hours-per-instance').value = '';
+    renderRrEcRows([]);
   } else {
     const r = _recurringRules.find(x => Number(x.id) === Number(id));
     if (!r) { toast('Rule not found', 'error'); return; }
@@ -3119,8 +3465,15 @@ function openRecurringModal(id) {
     document.getElementById('rr-day-of-month').value = String(r.day_of_month != null ? r.day_of_month : 1);
     document.getElementById('rr-start-date').value = (r.start_date || '').slice(0, 10) || today;
     document.getElementById('rr-description').value = r.description || r.notes || '';
+    document.getElementById('rr-instances-worked').value = String(r.instances_worked != null ? Math.max(0, parseInt(String(r.instances_worked), 10) || 0) : 0);
+    const hpi = r.hours_per_instance;
+    document.getElementById('rr-hours-per-instance').value = (hpi != null && hpi !== '' && !Number.isNaN(Number(hpi)) && Number(hpi) > 0) ? String(hpi) : '';
+    renderRrEcRows(Array.isArray(r.extra_costs) ? r.extra_costs : []);
   }
   toggleRecurringCadenceUI();
+  syncRrHoursPerInstanceVisibility();
+  syncRrRecurringCostSummary();
+  void refreshRrPropertyAddressPreview();
   openModal('modal-recurring');
 }
 
@@ -3133,6 +3486,16 @@ async function saveRecurringRule() {
   const cust = document.getElementById('rr-customer').value;
   const dow = Number(document.getElementById('rr-day-of-week').value);
   const dom = Number(document.getElementById('rr-day-of-month').value) || 1;
+  const instRaw = (document.getElementById('rr-instances-worked') && document.getElementById('rr-instances-worked').value || '').trim();
+  const instancesWorked = instRaw === '' ? 0 : Math.max(0, parseInt(instRaw, 10) || 0);
+  const hRaw = (document.getElementById('rr-hours-per-instance') && document.getElementById('rr-hours-per-instance').value || '').trim();
+  const custForPricing = cust ? _customers.find(c => String(c.id) === String(cust)) : null;
+  const hourlyCust = custForPricing && String(custForPricing.price_agreed_type || 'fixed').toLowerCase() === 'hourly';
+  let hoursPerInstance = null;
+  if (hourlyCust && hRaw !== '') {
+    const h = parseFloat(hRaw);
+    if (!Number.isNaN(h) && h > 0) hoursPerInstance = h;
+  }
   if (!propertyId || propertyId < 1) { toast('Property ID is required', 'error'); return; }
   if (!desc) { toast('Description is required', 'error'); return; }
   try {
@@ -3143,9 +3506,12 @@ async function saveRecurringRule() {
         start_date: start || undefined,
         notes: desc,
         day_of_week: dow,
-        day_of_month: dom
+        day_of_month: dom,
+        extra_costs: collectRrEcRows(),
+        instances_worked: instancesWorked,
       };
       if (cust) body.customer_id = Number(cust);
+      if (hoursPerInstance != null) body.hours_per_instance = hoursPerInstance;
       const r = await fetch('/api/v1/recurring-job-rules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3164,7 +3530,10 @@ async function saveRecurringRule() {
           day_of_week: dow,
           day_of_month: dom,
           property_id: propertyId,
-          customer_id: cust ? Number(cust) : null
+          customer_id: cust ? Number(cust) : null,
+          extra_costs: collectRrEcRows(),
+          instances_worked: instancesWorked,
+          hours_per_instance: hourlyCust ? hoursPerInstance : null,
         })
       });
       if (!r.ok) throw new Error(r.statusText);

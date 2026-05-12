@@ -18,6 +18,7 @@ from app.entities import NotificationLog
 from app.job_management import complete_job
 from app.models import Customer as CustomerORM
 from app.models import Job as JobORM
+from app.extra_costs import normalize_extra_costs_lines
 from app.nz_time import nz_wall_naive_to_iso_with_offset, parse_any_to_naive_nz_wall
 
 router = APIRouter(tags=["jobs"])
@@ -70,46 +71,12 @@ def _job_dict_from_row(job: JobORM) -> dict[str, Any]:
         merged["hours_worked"] = float(job.hours_worked)
     elif "hours_worked" not in merged:
         merged["hours_worked"] = None
-    if not isinstance(merged.get("job_costs"), list):
-        merged["job_costs"] = []
-    else:
-        merged["job_costs"] = _normalize_job_costs(merged.get("job_costs"))
+    raw_lines = merged.get("extra_costs")
+    if not isinstance(raw_lines, list):
+        raw_lines = merged.get("job_costs") if isinstance(merged.get("job_costs"), list) else []
+    merged["extra_costs"] = normalize_extra_costs_lines(raw_lines)
+    merged.pop("job_costs", None)
     return merged
-
-
-_PRESET_JOB_COST_CATEGORIES = frozenset({"materials", "fuel", "labor", "equipment", "travel", "custom", "other"})
-
-
-def _canonical_job_cost_category(raw: Any) -> str:
-    s = str(raw or "").strip()
-    if not s:
-        return "materials"
-    sl = s.lower()
-    if sl in _PRESET_JOB_COST_CATEGORIES:
-        return sl
-    return s[:48]
-
-
-def _normalize_job_costs(raw: Any) -> list[dict[str, Any]]:
-    """Normalize persisted job cost lines (category + label + amount)."""
-    if not isinstance(raw, list):
-        return []
-    out: list[dict[str, Any]] = []
-    for item in raw:
-        if not isinstance(item, dict):
-            continue
-        cat = _canonical_job_cost_category(item.get("category"))
-        label = str(item.get("label") or "").strip()
-        if not label and cat == "materials":
-            label = "Material"
-        try:
-            amt = float(item.get("amount", 0) or 0)
-        except (TypeError, ValueError):
-            amt = 0.0
-        if amt < 0:
-            amt = 0.0
-        out.append({"category": cat, "label": label, "amount": round(amt, 2)})
-    return out
 
 
 def _parse_optional_estimated_minutes(val: Any) -> Optional[int]:
@@ -183,7 +150,7 @@ def _build_job_detail_json(
         "checklist": [],
         "materials": [],
         "attachments": [],
-        "job_costs": [],
+        "extra_costs": [],
         "weather_context": {"summary": "—", "risk_level": "unknown", "forecast_url": ""},
     }
     if scheduled_date_iso:
@@ -233,6 +200,7 @@ def _persist_job_dict(db: Session, job_id: int, data: dict[str, Any]) -> None:
     if "hours_worked" in data:
         v = data.get("hours_worked")
         row.hours_worked = None if v in (None, "") else float(v)
+    data.pop("job_costs", None)
     row.detail_json = json.dumps(data)
 
 
@@ -319,8 +287,11 @@ def patch_job(
         )
     if "hours_worked" in body:
         after["hours_worked"] = _parse_optional_hours_worked(body.get("hours_worked"))
-    if "job_costs" in body:
-        after["job_costs"] = _normalize_job_costs(body.get("job_costs"))
+    if "extra_costs" in body:
+        after["extra_costs"] = normalize_extra_costs_lines(body.get("extra_costs"))
+    elif "job_costs" in body:
+        after["extra_costs"] = normalize_extra_costs_lines(body.get("job_costs"))
+    after.pop("job_costs", None)
     _refresh_job_detail_contact(db, after)
     _persist_job_dict(db, job_id, after)
     db.commit()

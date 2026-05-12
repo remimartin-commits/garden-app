@@ -40,11 +40,37 @@ def test_list_recurring_job_rules_includes_sample() -> None:
     assert any(r["id"] == 1 for r in rules)
     sample = next(r for r in rules if r["id"] == 1)
     assert sample["cadence"] == "weekly"
+    assert sample.get("property_id") == 201
+    assert sample.get("property_address") == "14 Marine Parade, Mt Maunganui"
+    assert "extra_costs" in sample
+    assert sample["extra_costs"] == []
+    assert sample.get("instances_worked") == 0
+    assert sample.get("hours_per_instance") is None
 
 
-def test_delete_sample_rule_rejected() -> None:
-    response = client.delete("/api/v1/recurring-job-rules/1")
-    assert response.status_code == 400
+def test_patch_recurring_rule_extra_costs() -> None:
+    r = client.patch(
+        "/api/v1/recurring-job-rules/1",
+        json={"extra_costs": [{"category": "materials", "label": "Blades", "amount": 15}]},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data.get("extra_costs") or []) == 1
+    assert data["extra_costs"][0]["amount"] == 15.0
+
+
+def test_patch_recurring_rule_instances_and_hours() -> None:
+    r = client.patch(
+        "/api/v1/recurring-job-rules/1",
+        json={"instances_worked": 5, "hours_per_instance": 2.5},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["instances_worked"] == 5
+    assert data["hours_per_instance"] == 2.5
+    r2 = client.patch("/api/v1/recurring-job-rules/1", json={"hours_per_instance": None})
+    assert r2.status_code == 200
+    assert r2.json().get("hours_per_instance") is None
 
 
 def test_create_patch_delete_recurring_rule_roundtrip() -> None:

@@ -8,6 +8,9 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Body, HTTPException, status
 from pydantic import BaseModel, Field
 
+from app.extra_costs import normalize_extra_costs_lines
+from app.property_api import _get_active_property
+
 router = APIRouter(tags=["recurring-job-rules"])
 
 _NZ = ZoneInfo("Pacific/Auckland")
@@ -24,9 +27,53 @@ _RULES: dict[int, dict[str, Any]] = {
         "notes": "",
         "day_of_week": 0,
         "day_of_month": 1,
+        "extra_costs": [],
+        "instances_worked": 0,
     },
 }
 _NEXT_RULE_ID = 2
+
+
+def _norm_instances_worked(val: Any) -> int:
+    if val is None or val == "":
+        return 0
+    try:
+        n = int(val)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, n)
+
+
+def _norm_hours_per_instance_in(raw: Any) -> float | None:
+    """Persisted hours per visit for hourly billing; None = UI default (1 hr)."""
+    if raw is None or raw == "":
+        return None
+    try:
+        x = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if x <= 0:
+        return None
+    return round(x, 4)
+
+
+def _hours_per_instance_out(rule: dict[str, Any]) -> float | None:
+    return _norm_hours_per_instance_in(rule.get("hours_per_instance"))
+
+
+def _property_address_for(property_id: Any) -> str | None:
+    """Resolve street address from the properties directory when the ID is known."""
+    if property_id is None:
+        return None
+    try:
+        pid = int(property_id)
+    except (TypeError, ValueError):
+        return None
+    sp = _get_active_property(pid)
+    if sp is None:
+        return None
+    addr = (sp.address or "").strip()
+    return addr or None
 
 
 def _rule_or_404(rule_id: int) -> dict[str, Any]:
@@ -34,6 +81,27 @@ def _rule_or_404(rule_id: int) -> dict[str, Any]:
     if r is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recurring job rule not found")
     return r
+
+
+def _rule_to_response(rule: dict[str, Any]) -> dict[str, Any]:
+    """Stable API shape for list/get/patch (includes extra cost lines)."""
+    desc = str(rule.get("description") or rule.get("notes") or "").strip()
+    return {
+        "id": int(rule["id"]),
+        "description": desc or "Recurring job",
+        "paused": bool(rule.get("paused", False)),
+        "cadence": str(rule.get("cadence") or "weekly"),
+        "start_date": str(rule.get("start_date") or ""),
+        "property_id": rule.get("property_id"),
+        "property_address": _property_address_for(rule.get("property_id")),
+        "customer_id": rule.get("customer_id"),
+        "day_of_week": int(rule.get("day_of_week", 0)),
+        "day_of_month": int(rule.get("day_of_month", 1)),
+        "notes": str(rule.get("notes") or ""),
+        "extra_costs": normalize_extra_costs_lines(rule.get("extra_costs", [])),
+        "instances_worked": _norm_instances_worked(rule.get("instances_worked")),
+        "hours_per_instance": _hours_per_instance_out(rule),
+    }
 
 
 def _norm_cadence(freq: str) -> Literal["weekly", "monthly"]:
@@ -121,6 +189,9 @@ class RecurringJobRuleCreateBody(BaseModel):
     customer_id: int | None = None
     day_of_week: int = Field(default=0, ge=0, le=6)
     day_of_month: int = Field(default=1, ge=1, le=28)
+    extra_costs: list[Any] | None = None
+    instances_worked: int | None = Field(default=None, ge=0)
+    hours_per_instance: float | None = Field(default=None, gt=0)
 
 
 class RecurringJobRulePatchBody(BaseModel):
@@ -132,12 +203,15 @@ class RecurringJobRulePatchBody(BaseModel):
     day_of_month: Optional[int] = Field(default=None, ge=1, le=28)
     property_id: Optional[int] = None
     customer_id: Optional[int] = None
+    extra_costs: Optional[list[Any]] = None
+    instances_worked: Optional[int] = Field(default=None, ge=0)
+    hours_per_instance: Optional[float] = Field(default=None, gt=0)
 
 
 @router.get("/api/v1/recurring-job-rules")
 def list_recurring_job_rules() -> dict[str, list[dict[str, Any]]]:
     rows = sorted(_RULES.values(), key=lambda r: int(r["id"]), reverse=True)
-    return {"rules": rows}
+    return {"rules": [_rule_to_response(r) for r in rows]}
 
 
 @router.post("/api/v1/recurring-job-rules", status_code=status.HTTP_201_CREATED)
@@ -159,28 +233,21 @@ def create_recurring_job_rule(body: RecurringJobRuleCreateBody) -> dict[str, str
         "notes": (body.notes or "").strip(),
         "day_of_week": int(body.day_of_week),
         "day_of_month": int(body.day_of_month),
+        "extra_costs": normalize_extra_costs_lines(body.extra_costs or []),
+        "instances_worked": _norm_instances_worked(
+            body.instances_worked if body.instances_worked is not None else 0
+        ),
     }
+    hpi = _norm_hours_per_instance_in(body.hours_per_instance)
+    if hpi is not None:
+        _RULES[rid]["hours_per_instance"] = hpi
     return {"message": "Recurring job rule created successfully."}
 
 
 @router.get("/api/v1/recurring-job-rules/{rule_id}")
 def read_recurring_job_rule(rule_id: int) -> dict[str, Any]:
-    _rule_or_404(rule_id)
-    if rule_id == 1:
-        return {"id": 1, "name": "Weekly Lawn Mowing"}
-    r = _RULES[rule_id]
-    return {
-        "id": r["id"],
-        "name": r.get("description") or "Scheduled job",
-        "cadence": r.get("cadence"),
-        "paused": r.get("paused"),
-        "start_date": r.get("start_date"),
-        "property_id": r.get("property_id"),
-        "customer_id": r.get("customer_id"),
-        "day_of_week": r.get("day_of_week"),
-        "day_of_month": r.get("day_of_month"),
-        "notes": r.get("notes"),
-    }
+    rule = _rule_or_404(rule_id)
+    return _rule_to_response(rule)
 
 
 @router.patch("/api/v1/recurring-job-rules/{rule_id}")
@@ -203,8 +270,22 @@ def patch_recurring_job_rule(rule_id: int, body: RecurringJobRulePatchBody) -> d
         rule["property_id"] = int(data["property_id"])
     if "customer_id" in data:
         rule["customer_id"] = data["customer_id"]
+    if "extra_costs" in data and data["extra_costs"] is not None:
+        rule["extra_costs"] = normalize_extra_costs_lines(data["extra_costs"])
+    if "instances_worked" in data and data["instances_worked"] is not None:
+        rule["instances_worked"] = _norm_instances_worked(data["instances_worked"])
+    if "hours_per_instance" in data:
+        hraw = data["hours_per_instance"]
+        if hraw is None or hraw == "":
+            rule.pop("hours_per_instance", None)
+        else:
+            hpi = _norm_hours_per_instance_in(hraw)
+            if hpi is None:
+                rule.pop("hours_per_instance", None)
+            else:
+                rule["hours_per_instance"] = hpi
     _RULES[rule_id] = rule
-    return rule
+    return _rule_to_response(rule)
 
 
 @router.delete("/api/v1/recurring-job-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
