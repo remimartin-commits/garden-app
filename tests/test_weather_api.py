@@ -7,24 +7,36 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_get_weather_returns_cached_snapshots_for_christchurch_area() -> None:
+def test_get_weather_returns_forecast_and_snapshots() -> None:
     response = client.get("/api/v1/weather")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) >= 1
-    suburbs = {str(row.get("suburb", "")).lower() for row in data}
+    assert isinstance(data, dict)
+    assert "summary" in data
+    assert isinstance(data["summary"], str)
+    assert data.get("timezone") == "Pacific/Auckland"
+    snaps = data.get("snapshots")
+    assert isinstance(snaps, list)
+    assert len(snaps) >= 1
+    suburbs = {str(row.get("suburb", "")).lower() for row in snaps}
     assert any("redcliffs" in s or "christchurch" in s for s in suburbs)
-    first = data[0]
+    first = snaps[0]
     assert "weather_snapshot_id" in first
     for key in ("temperature", "humidity", "wind_speed", "description", "timestamp"):
         assert key in first
+    fc = data.get("forecast")
+    assert isinstance(fc, list)
+    assert len(fc) == 14
+    day0 = fc[0]
+    for key in ("date", "weekday", "label", "high_c", "low_c", "precipitation_probability", "wind_kmh"):
+        assert key in day0
 
 
-def test_get_weather_snapshots() -> None:
+def test_get_weather_snapshots_nested() -> None:
     response = client.get("/api/v1/weather")
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
+    body = response.json()
+    assert isinstance(body.get("snapshots"), list)
 
 
 def test_reschedule_weather_risk() -> None:

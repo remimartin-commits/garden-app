@@ -87,13 +87,87 @@
       font-size: .85rem; font-weight: 700;
     }
     .weather-chip {
-      display: flex; align-items: center; gap: .4rem;
-      padding: .3rem .7rem;
+      display: inline-flex; align-items: center; gap: .45rem;
+      padding: .3rem .75rem;
       background: var(--green-50);
       border: 1px solid var(--green-100);
       border-radius: 99px;
       font-size: .8rem; color: var(--green-700); font-weight: 600;
+      font: inherit;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, box-shadow .15s;
     }
+    .weather-chip:hover {
+      background: var(--green-100);
+      border-color: var(--green-400);
+      box-shadow: 0 2px 8px rgba(27, 67, 50, 0.1);
+    }
+    .weather-chip:focus-visible {
+      outline: 2px solid var(--green-600);
+      outline-offset: 2px;
+    }
+    .weather-chip svg { flex-shrink: 0; }
+    .weather-chip-text { text-align: left; max-width: 14rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Weather forecast modal ── */
+    .wx-lead { font-size: .82rem; color: var(--muted); margin: -.5rem 0 1rem; line-height: 1.45; }
+    .wx-hero { margin-bottom: 1rem; }
+    .wx-today {
+      display: flex; align-items: stretch; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      padding: 1rem 1.1rem; border-radius: .65rem;
+      background: linear-gradient(135deg, var(--green-100) 0%, #fff 55%);
+      border: 1px solid rgba(45, 106, 79, 0.25);
+    }
+    .wx-today-label { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--green-700); }
+    .wx-today-temps { margin: .2rem 0 .35rem; font-size: 1.65rem; font-weight: 800; color: var(--green-900); letter-spacing: -.03em; }
+    .wx-today-temps .wx-lo { font-size: 1rem; font-weight: 700; color: var(--muted); margin-left: .5rem; }
+    .wx-today-desc { margin: 0; font-size: .9rem; color: var(--text); line-height: 1.4; max-width: 22rem; }
+    .wx-today-side { display: flex; flex-direction: column; gap: .35rem; justify-content: center; font-size: .78rem; color: var(--muted); font-weight: 600; text-align: right; min-width: 8rem; }
+    .wx-subnav { display: flex; gap: .4rem; margin-bottom: .75rem; flex-wrap: wrap; }
+    .wx-tab {
+      padding: .4rem 1rem; border-radius: .45rem; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--muted); font-size: .82rem; font-weight: 600;
+      font: inherit; cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+    }
+    .wx-tab:hover { color: var(--text); border-color: var(--green-400); }
+    .wx-tab.active { background: var(--green-700); color: #fff; border-color: var(--green-700); }
+    .wx-pane { display: none; }
+    .wx-pane.active { display: block; }
+    .wx-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      gap: .55rem;
+    }
+    .wx-day {
+      border: 1px solid var(--border); border-radius: .55rem; padding: .65rem .6rem .7rem;
+      background: var(--surface); display: flex; flex-direction: column; gap: .35rem;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .wx-day:hover { border-color: var(--green-400); box-shadow: 0 2px 8px rgba(27, 67, 50, 0.06); }
+    .wx-day-meta { display: flex; justify-content: space-between; align-items: baseline; gap: .35rem; }
+    .wx-dow { font-size: .72rem; font-weight: 800; color: var(--green-700); text-transform: uppercase; letter-spacing: .04em; }
+    .wx-date { font-size: .68rem; color: var(--muted); font-weight: 600; }
+    .wx-temp-row { font-size: 1.05rem; font-weight: 800; color: var(--green-900); }
+    .wx-temp-row .wx-lo { font-size: .82rem; font-weight: 700; color: var(--muted); margin-left: .35rem; }
+    .wx-desc { margin: 0; font-size: .76rem; color: var(--text); line-height: 1.35; flex: 1; }
+    .wx-stats { display: flex; flex-wrap: wrap; gap: .35rem .5rem; font-size: .65rem; font-weight: 600; color: var(--muted); }
+    .wx-snap-head { font-size: .82rem; font-weight: 700; color: var(--green-900); margin: 1.35rem 0 .5rem; }
+    .wx-footnote { font-size: .72rem; color: var(--muted); margin: 1rem 0 0; line-height: 1.4; }
+
+    /* ── Jobs day filter (from calendar) ── */
+    .jobs-day-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      flex-wrap: wrap;
+      margin: -.35rem 0 1rem;
+      padding: .65rem .85rem;
+      border-radius: .5rem;
+      border: 1px solid rgba(45, 106, 79, 0.28);
+      background: linear-gradient(120deg, var(--green-50) 0%, #fff 70%);
+    }
+    .jobs-day-banner-label { font-size: .84rem; font-weight: 700; color: var(--green-900); line-height: 1.35; }
 
     /* ── Page ── */
     main { flex: 1; padding: 1.5rem; max-width: 1200px; width: 100%; }
@@ -234,6 +308,90 @@
     .dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
     @media (max-width: 860px) { .dash-cols { grid-template-columns: 1fr; } }
 
+    /* ── Dashboard calendar ── */
+    .cal-card { margin-bottom: 1.25rem; overflow: hidden; }
+    .cal-card-head { flex-wrap: wrap; gap: .75rem; }
+    .cal-toolbar { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+    .cal-toolbar .cal-label {
+      min-width: 8.5rem; text-align: center; font-size: .95rem; font-weight: 800;
+      color: var(--green-900); letter-spacing: -.02em;
+    }
+    .cal-hint {
+      font-size: .78rem; color: var(--muted); margin: -.4rem 0 1rem;
+      line-height: 1.4;
+    }
+    .cal-wrap {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: .4rem;
+    }
+    .cal-dow {
+      text-align: center; font-size: .65rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--muted); padding: .25rem 0 .5rem;
+    }
+    .cal-cell {
+      min-height: 2.75rem;
+      border: 1px solid var(--border);
+      border-radius: .55rem;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding: .35rem .15rem .4rem;
+      font-size: .75rem;
+      background: var(--surface);
+      color: var(--text);
+      position: relative;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .cal-cell.cal-muted {
+      opacity: .42;
+      background: var(--bg);
+    }
+    .cal-cell.cal-today {
+      border-color: var(--green-600);
+      box-shadow: inset 0 0 0 1px rgba(64, 145, 108, 0.35);
+    }
+    .cal-cell.cal-has {
+      background: linear-gradient(160deg, var(--green-100) 0%, #fff 52%);
+      border-color: rgba(45, 106, 79, 0.35);
+      cursor: pointer;
+    }
+    .cal-cell.cal-has.cal-past-incomplete {
+      background: linear-gradient(160deg, #fef3c7 0%, #fde68a 38%, #fff 82%);
+      border-color: rgba(180, 83, 9, 0.5);
+    }
+    .cal-cell.cal-has.cal-past-incomplete:hover {
+      border-color: #d97706;
+      box-shadow: 0 2px 10px rgba(180, 83, 9, 0.2);
+    }
+    .cal-cell.cal-muted.cal-past-incomplete { opacity: 1; }
+    .cal-cell.cal-has:hover {
+      border-color: var(--green-600);
+      box-shadow: 0 2px 10px rgba(27, 67, 50, 0.12);
+    }
+    .cal-cell.cal-has:focus-visible { outline: 2px solid var(--green-600); outline-offset: 2px; }
+    .cal-day-num { font-weight: 800; font-size: .84rem; line-height: 1.1; color: var(--green-900); }
+    .cal-muted .cal-day-num { color: var(--muted); font-weight: 600; }
+    .cal-badges { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+    .cal-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.65);
+    }
+    .cal-dot--completed { background: #059669; }
+    .cal-dot--scheduled { background: #2563eb; }
+    .cal-dot--in_progress { background: #ea580c; }
+    .cal-dot--cancelled { background: #dc2626; }
+    .cal-count {
+      font-size: .62rem; font-weight: 800; color: var(--green-700);
+      background: rgba(45, 106, 79, 0.12); padding: 1px 5px; border-radius: 99px;
+      line-height: 1.2;
+    }
+    @media (max-width: 520px) {
+      .cal-cell { min-height: 2.45rem; padding: .28rem .1rem .35rem; }
+      .cal-day-num { font-size: .76rem; }
+    }
+
     /* ── Plant exchange subnav ── */
     .subnav { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
     .subnav a {
@@ -303,10 +461,10 @@
   <header>
     <span class="header-title" id="page-title">Dashboard</span>
     <div class="header-right">
-      <div class="weather-chip" id="weather-chip">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        Loading…
-      </div>
+      <button type="button" class="weather-chip" id="weather-chip" onclick="openWeatherModal()" aria-haspopup="dialog" aria-controls="modal-weather" title="Open 14-day forecast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <span class="weather-chip-text" id="weather-chip-text">Loading…</span>
+      </button>
       <div class="avatar">GP</div>
     </div>
   </header>
@@ -339,6 +497,20 @@
         </div>
       </div>
 
+      <div class="card cal-card">
+        <div class="card-title cal-card-head">
+          <span>Schedule calendar</span>
+          <div class="cal-toolbar">
+            <button type="button" class="btn btn-outline btn-sm" onclick="dashCalPrev()" aria-label="Previous month">‹</button>
+            <span class="cal-label" id="dash-cal-label">—</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="dashCalNext()" aria-label="Next month">›</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="dashCalToday()">Today</button>
+          </div>
+        </div>
+        <p class="cal-hint">Markers: <span class="cal-dot cal-dot--completed" style="display:inline-block;vertical-align:middle;margin:0 2px 0 4px"></span> completed · <span class="cal-dot cal-dot--scheduled" style="display:inline-block;vertical-align:middle;margin:0 2px 0 4px"></span> scheduled · <span class="cal-dot cal-dot--in_progress" style="display:inline-block;vertical-align:middle;margin:0 2px 0 4px"></span> in progress · <span class="cal-dot cal-dot--cancelled" style="display:inline-block;vertical-align:middle;margin:0 2px 0 4px"></span> cancelled. Past days with open work are <strong>highlighted yellow</strong>. Click a day with visits to see jobs.</p>
+        <div id="dash-calendar" class="cal-wrap" aria-label="Monthly job calendar"></div>
+      </div>
+
       <div class="dash-cols">
         <div class="card">
           <div class="card-title">
@@ -364,13 +536,12 @@
     <!-- ══ JOBS & SCHEDULE PAGE ══ -->
     <div id="page-jobs" class="page">
       <div class="page-title">Jobs & schedule</div>
-      <p class="page-lead">This week’s roster, your full job list, and recurring rules — together so you are not jumping between screens.</p>
       <div class="toolbar">
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="search" placeholder="Search jobs…" oninput="filterJobs(this.value)" id="job-search">
         </div>
-        <button class="btn btn-primary" onclick="openModal('modal-new-job')">
+        <button class="btn btn-primary" onclick="openModal('modal-new-job'); syncNjJobTimeFields();">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New Job
         </button>
@@ -385,9 +556,6 @@
       <div id="jobs-pane-week" class="jobs-pane active">
         <div class="card">
           <div class="card-title">What’s on this week</div>
-          <p style="font-size:.82rem;color:var(--muted);margin:-.35rem 0 .75rem;line-height:1.45">
-            Jobs with a scheduled date in the current week (Mon–Sun, <strong>New Zealand time</strong>) are listed first. Jobs without a date appear under <strong>No date yet</strong> — add a date from job details when you can.
-          </p>
           <div id="schedule-grid" class="loading">Loading schedule…</div>
         </div>
       </div>
@@ -395,6 +563,10 @@
       <div id="jobs-pane-all" class="jobs-pane">
         <div class="card">
           <div class="card-title">All jobs</div>
+          <div id="jobs-day-filter-banner" class="jobs-day-banner" style="display:none" role="status">
+            <span id="jobs-day-filter-label" class="jobs-day-banner-label"></span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="clearJobsDayFilter()">Show all jobs</button>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -402,6 +574,7 @@
                   <th>#</th>
                   <th>When</th>
                   <th>Customer</th>
+                  <th>Who's job</th>
                   <th>Property</th>
                   <th>Description</th>
                   <th>Status</th>
@@ -409,7 +582,7 @@
                 </tr>
               </thead>
               <tbody id="jobs-tbody">
-                <tr><td colspan="7" class="loading">Loading jobs…</td></tr>
+                <tr><td colspan="8" class="loading">Loading jobs…</td></tr>
               </tbody>
             </table>
           </div>
@@ -477,7 +650,6 @@
     <!-- ══ PLANT EXCHANGE PAGE ══ -->
     <div id="page-plants" class="page">
       <div class="page-title">Plant exchange</div>
-      <p class="page-lead">Track plants you are looking for and surplus you can offer to clients or crew. Use status to show progress from seeking or available through to fulfilled or given away.</p>
       <div class="subnav" id="plants-subnav">
         <a href="#" class="active" data-plants-tab="wanted">Plants wanted</a>
         <a href="#" data-plants-tab="giveaway">Plants to give away</a>
@@ -629,9 +801,21 @@
       </div>
       <div class="field">
         <label>Status</label>
-        <select id="nj-status">
+        <select id="nj-status" onchange="syncNjJobTimeFields()">
           <option>Scheduled</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
         </select>
+      </div>
+      <div class="field" id="nj-wrap-estimated" style="grid-column:1/-1">
+        <label>Estimated visit time <span style="font-weight:500;color:var(--muted)">(optional, minutes)</span></label>
+        <input type="number" id="nj-estimated" min="0" step="1" placeholder="e.g. 90 for 1h30">
+      </div>
+      <div class="field" id="nj-wrap-hours-worked" style="grid-column:1/-1;display:none">
+        <label>Hours worked <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+        <input type="number" id="nj-hours-worked" min="0" step="0.25" placeholder="e.g. 2.5">
+      </div>
+      <div class="field">
+        <label>Who's job <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+        <input type="text" id="nj-assignee" placeholder="e.g. Alex, Crew 2, subcontractor name">
       </div>
       <div class="field" style="grid-column:1/-1">
         <label>Visit date &amp; time <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
@@ -646,6 +830,64 @@
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-new-job')">Cancel</button>
       <button class="btn btn-primary" onclick="createJob()">Create Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Job -->
+<div class="modal-backdrop" id="modal-edit-job">
+  <div class="modal">
+    <div class="modal-title">Edit Job</div>
+    <input type="hidden" id="ej-job-id" value="">
+    <div class="form-grid">
+      <div class="field">
+        <label>Customer</label>
+        <select id="ej-customer"><option value="">Select customer…</option></select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="ej-status" onchange="syncEjJobTimeFields()">
+          <option>Scheduled</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
+        </select>
+      </div>
+      <div class="field" id="ej-wrap-estimated" style="grid-column:1/-1">
+        <label>Estimated visit time <span style="font-weight:500;color:var(--muted)">(optional, minutes)</span></label>
+        <input type="number" id="ej-estimated" min="0" step="1" placeholder="e.g. 90 for 1h30">
+      </div>
+      <div class="field" id="ej-wrap-hours-worked" style="grid-column:1/-1;display:none">
+        <label>Hours worked <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+        <input type="number" id="ej-hours-worked" min="0" step="0.25" placeholder="e.g. 2.5">
+      </div>
+      <div class="field">
+        <label>Who's job <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+        <input type="text" id="ej-assignee" placeholder="e.g. Alex, Crew 2, subcontractor name">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Visit date &amp; time <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+        <input type="datetime-local" id="ej-datetime" step="300">
+        <span style="font-size:.78rem;color:var(--muted)">Clear the field to remove the scheduled time.</span>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Description</label>
+        <textarea id="ej-description" placeholder="Describe the job…"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-job')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveJobEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Day’s work (dashboard calendar) -->
+<div class="modal-backdrop" id="modal-dash-day">
+  <div class="modal modal--wide">
+    <div class="modal-title" id="dash-day-title">Day’s work</div>
+    <p style="font-size:.82rem;color:var(--muted);margin:-.5rem 0 .85rem" id="dash-day-sub">Jobs scheduled for this calendar date (visit time in New Zealand).</p>
+    <ul class="quick-list" id="dash-day-list" style="max-height:min(52vh,22rem);overflow-y:auto"></ul>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-dash-day')">Close</button>
+      <button type="button" class="btn btn-primary" onclick="dashDayOpenJobsSchedule()">Open in Jobs &amp; schedule</button>
     </div>
   </div>
 </div>
@@ -1040,6 +1282,32 @@
   </div>
 </div>
 
+<!-- Weather forecast -->
+<div class="modal-backdrop" id="modal-weather">
+  <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="wx-dialog-title">
+    <div class="modal-title" id="wx-dialog-title">Weather forecast</div>
+    <p class="wx-lead" id="wx-lead"></p>
+    <div class="wx-hero" id="wx-hero"></div>
+    <div class="wx-subnav" role="tablist" aria-label="Forecast weeks">
+      <button type="button" class="wx-tab active" role="tab" aria-selected="true" onclick="setWeatherForecastTab(0)">Week 1</button>
+      <button type="button" class="wx-tab" role="tab" aria-selected="false" onclick="setWeatherForecastTab(1)">Week 2</button>
+    </div>
+    <div class="wx-pane active" data-wx-pane="0"><div class="wx-grid" id="wx-grid-0"></div></div>
+    <div class="wx-pane" data-wx-pane="1"><div class="wx-grid" id="wx-grid-1"></div></div>
+    <h4 class="wx-snap-head">Area checks (demo snapshots)</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Suburb</th><th>Temp</th><th>Humidity</th><th>Wind</th><th>Notes</th></tr></thead>
+        <tbody id="wx-snapshots-tbody"></tbody>
+      </table>
+    </div>
+    <p class="wx-footnote">Outlook is generated for roster planning (up to 14 days) and is not a substitute for an official forecast.</p>
+    <div class="modal-actions" style="margin-top:1rem">
+      <button type="button" class="btn btn-outline" onclick="closeModal('modal-weather')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- Recurring job schedule -->
 <div class="modal-backdrop" id="modal-recurring">
   <div class="modal">
@@ -1118,9 +1386,14 @@ let _editCustomerSnapshot = null;
 let _plantListings = [];
 let _recurringRules = [];
 let _jobsActiveTab = 'week';
+let _dashCalYear = null;
+let _dashCalMonth = null;
+let _modalDashDayKey = null;
+let _jobsDayFilterKey = null;
 
 // ══ NAVIGATION ══
 function nav(page) {
+  if (page !== 'jobs') _jobsDayFilterKey = null;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('[data-page]').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
@@ -1195,6 +1468,18 @@ function jobPropertyAddress(j) {
   return String(j.property?.address || j.property_info?.address || '').trim();
 }
 
+/** Map API ``scheduled_date`` (ISO) to ``datetime-local`` value (wall date + time, no offset). */
+function jobScheduledToDatetimeLocal(iso) {
+  if (iso == null || String(iso).trim() === '') return '';
+  const s = String(iso).trim();
+  const i = s.indexOf('T');
+  if (i < 0) return s.length >= 10 ? s.slice(0, 10) + 'T00:00' : '';
+  const datePart = s.slice(0, i);
+  const rest = s.slice(i + 1);
+  const hm = rest.match(/^(\d{2}:\d{2})/);
+  return datePart + 'T' + (hm ? hm[1] : '00:00');
+}
+
 /** Format API `scheduled_date` (ISO string) for tables and lists. */
 function formatJobWhen(j) {
   const raw = j && j.scheduled_date;
@@ -1202,6 +1487,57 @@ function formatJobWhen(j) {
   const s = String(raw);
   if (s.includes('T')) return s.replace('T', ' ').slice(0, 16);
   return s.slice(0, 16);
+}
+
+function jobStatusForTimeExtras(obj) {
+  if (!obj) return '';
+  const s = obj.workflow_status != null ? obj.workflow_status : obj.status;
+  return String(s || '').trim().toLowerCase();
+}
+
+/** Optional estimated minutes (scheduled) or hours worked (in progress / completed) for list copy. */
+function formatJobTimeExtras(j) {
+  const st = jobStatusForTimeExtras(j);
+  const parts = [];
+  if (st === 'scheduled') {
+    const est = j.estimated_duration_minutes;
+    if (est != null && est !== '' && !Number.isNaN(Number(est)) && Number(est) > 0) {
+      parts.push('Est ' + Number(est) + 'm');
+    }
+  }
+  if (st === 'in progress' || st === 'completed') {
+    const hw = j.hours_worked;
+    if (hw != null && hw !== '' && !Number.isNaN(Number(hw)) && Number(hw) > 0) {
+      const h = Number(hw);
+      const hs = (Math.abs(h - Math.round(h)) < 1e-6) ? String(Math.round(h)) : String(Math.round(h * 100) / 100);
+      parts.push(hs + 'h worked');
+    }
+  }
+  return parts.length ? (' · ' + parts.join(', ')) : '';
+}
+
+function syncNjJobTimeFields() {
+  const sel = document.getElementById('nj-status');
+  const wEst = document.getElementById('nj-wrap-estimated');
+  const wHw = document.getElementById('nj-wrap-hours-worked');
+  if (!sel || !wEst || !wHw) return;
+  const st = String(sel.value || '').trim().toLowerCase();
+  const showEst = st === 'scheduled';
+  const showHw = st === 'in progress' || st === 'completed';
+  wEst.style.display = showEst ? '' : 'none';
+  wHw.style.display = showHw ? '' : 'none';
+}
+
+function syncEjJobTimeFields() {
+  const sel = document.getElementById('ej-status');
+  const wEst = document.getElementById('ej-wrap-estimated');
+  const wHw = document.getElementById('ej-wrap-hours-worked');
+  if (!sel || !wEst || !wHw) return;
+  const st = String(sel.value || '').trim().toLowerCase();
+  const showEst = st === 'scheduled';
+  const showHw = st === 'in progress' || st === 'completed';
+  wEst.style.display = showEst ? '' : 'none';
+  wHw.style.display = showHw ? '' : 'none';
 }
 
 function openMapModal(address, contextLabel) {
@@ -1280,14 +1616,295 @@ async function api(path, opts = {}) {
 }
 
 // ══ WEATHER ══
+let _weatherData = null;
+
+function formatWxShortDate(isoDate) {
+  try {
+    const d = new Date(String(isoDate) + 'T12:00:00');
+    if (Number.isNaN(d.getTime())) return String(isoDate);
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  } catch {
+    return String(isoDate);
+  }
+}
+
+function wxDayCard(day) {
+  const pop = day.precipitation_probability != null ? Math.round(Number(day.precipitation_probability)) : '—';
+  const wk = day.weekday != null ? String(day.weekday) : '';
+  return `<div class="wx-day">
+    <div class="wx-day-meta"><span class="wx-dow">${esc(wk)}</span><span class="wx-date">${esc(formatWxShortDate(day.date))}</span></div>
+    <div class="wx-temp-row"><span class="wx-hi">${Number(day.high_c)}°</span><span class="wx-lo">${Number(day.low_c)}°</span></div>
+    <p class="wx-desc">${esc(day.label || '')}</p>
+    <div class="wx-stats"><span>Rain ${pop}%</span><span>Wind ${Number(day.wind_kmh)} km/h</span></div>
+  </div>`;
+}
+
+function renderWeatherModal(data) {
+  const lead = document.getElementById('wx-lead');
+  const hero = document.getElementById('wx-hero');
+  const g0 = document.getElementById('wx-grid-0');
+  const g1 = document.getElementById('wx-grid-1');
+  const tb = document.getElementById('wx-snapshots-tbody');
+  if (!lead || !hero || !g0 || !g1 || !tb) return;
+  const reg = data.region != null ? String(data.region) : 'Region';
+  const tz = data.timezone != null ? String(data.timezone) : '';
+  lead.textContent = reg + (tz ? ' · ' + tz : '');
+  const fc = data.forecast || [];
+  if (fc.length) {
+    const t0 = fc[0];
+    const pop0 = t0.precipitation_probability != null ? Math.round(Number(t0.precipitation_probability)) : '—';
+    hero.innerHTML = `<div class="wx-today">
+      <div>
+        <span class="wx-today-label">Today</span>
+        <h3 class="wx-today-temps"><span class="wx-hi">${Number(t0.high_c)}°</span><span class="wx-lo">${Number(t0.low_c)}°</span></h3>
+        <p class="wx-today-desc">${esc(t0.label || '')}</p>
+      </div>
+      <div class="wx-today-side"><span>Rain chance ${pop0}%</span><span>Wind ${Number(t0.wind_kmh)} km/h</span></div>
+    </div>`;
+  } else {
+    hero.innerHTML = '';
+  }
+  g0.innerHTML = fc.slice(0, 7).map(wxDayCard).join('');
+  g1.innerHTML = fc.slice(7, 14).map(wxDayCard).join('');
+  const snaps = data.snapshots || [];
+  if (!snaps.length) {
+    tb.innerHTML = '<tr><td colspan="5">No snapshot rows.</td></tr>';
+  } else {
+    tb.innerHTML = snaps.map(s => `<tr>
+      <td>${esc(s.suburb != null ? String(s.suburb) : '')}</td>
+      <td>${s.temperature != null ? Number(s.temperature).toFixed(1) + '°C' : '—'}</td>
+      <td>${s.humidity != null ? Number(s.humidity).toFixed(0) + '%' : '—'}</td>
+      <td>${s.wind_speed != null ? Number(s.wind_speed).toFixed(0) + ' km/h' : '—'}</td>
+      <td>${esc(s.description != null ? String(s.description) : '')}</td>
+    </tr>`).join('');
+  }
+}
+
+function setWeatherForecastTab(which) {
+  const tabs = document.querySelectorAll('#modal-weather .wx-tab');
+  tabs.forEach((b, i) => {
+    b.classList.toggle('active', i === which);
+    b.setAttribute('aria-selected', i === which ? 'true' : 'false');
+  });
+  document.querySelectorAll('#modal-weather .wx-pane').forEach(p => {
+    p.classList.toggle('active', Number(p.getAttribute('data-wx-pane')) === which);
+  });
+}
+
+async function openWeatherModal() {
+  if (!_weatherData || !_weatherData.forecast) await loadWeather();
+  if (!_weatherData || !_weatherData.forecast) {
+    toast('Could not load weather', 'error');
+    return;
+  }
+  renderWeatherModal(_weatherData);
+  setWeatherForecastTab(0);
+  openModal('modal-weather');
+}
+
 async function loadWeather() {
   const data = await api('/api/v1/weather');
-  const chip = document.getElementById('weather-chip');
+  const textEl = document.getElementById('weather-chip-text');
+  if (!textEl) return;
   if (data && data.summary) {
-    chip.lastChild.textContent = ' ' + data.summary.slice(0, 30);
+    _weatherData = data;
+    let t = String(data.summary).trim();
+    if (t.length > 36) t = t.slice(0, 33) + '…';
+    textEl.textContent = t || 'Open forecast';
   } else {
-    chip.lastChild.textContent = ' Fine conditions';
+    _weatherData = null;
+    textEl.textContent = 'Forecast unavailable';
   }
+}
+
+function dashCalPad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+/** Local calendar YYYY-MM-DD from API `scheduled_date`, or null if unparseable / missing. */
+function jobDateKeyFromScheduled(raw) {
+  if (raw == null || raw === '') return null;
+  const s = String(raw).trim();
+  if (!s || !/^\d{4}-\d{2}-\d{2}/.test(s)) return null;
+  return s.slice(0, 10);
+}
+
+function jobCalWorkflowNorm(j) {
+  return String(j && j.workflow_status != null ? j.workflow_status : '').trim().toLowerCase();
+}
+
+/** Dot colour bucket for calendar (matches job editor statuses). */
+function jobCalDotKind(j) {
+  const s = jobCalWorkflowNorm(j);
+  if (s === 'completed') return 'completed';
+  if (s === 'cancelled') return 'cancelled';
+  if (s === 'in progress' || s === 'in_progress') return 'in_progress';
+  if (s === 'scheduled') return 'scheduled';
+  return 'scheduled';
+}
+
+/** True if this calendar day is before today and has at least one job that is not completed or cancelled. */
+function jobCalCellPastIncomplete(dayJobs, dateKey, todayKey) {
+  if (!dayJobs.length || !(dateKey < todayKey)) return false;
+  return dayJobs.some(j => {
+    const s = jobCalWorkflowNorm(j);
+    return s !== 'completed' && s !== 'cancelled';
+  });
+}
+
+/** One dot per status type present that day (green / blue / orange / red). */
+function buildCalStatusDotsHtml(dayJobs) {
+  const kindOrder = ['completed', 'scheduled', 'in_progress', 'cancelled'];
+  const seen = new Set();
+  const kinds = [];
+  for (const j of dayJobs) {
+    const k = jobCalDotKind(j);
+    if (!seen.has(k)) {
+      seen.add(k);
+      kinds.push(k);
+    }
+  }
+  kinds.sort((a, b) => kindOrder.indexOf(a) - kindOrder.indexOf(b));
+  return kinds.map(k => `<span class="cal-dot cal-dot--${k}" aria-hidden="true"></span>`).join('');
+}
+
+function dashCalEnsureInit() {
+  if (_dashCalYear != null && _dashCalMonth != null) return;
+  const n = new Date();
+  _dashCalYear = n.getFullYear();
+  _dashCalMonth = n.getMonth();
+}
+
+function formatDateKeyUserLong(dateKey) {
+  try {
+    const d = new Date(String(dateKey) + 'T12:00:00');
+    if (Number.isNaN(d.getTime())) return String(dateKey);
+    return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  } catch {
+    return String(dateKey);
+  }
+}
+
+function dashCalOpenDay(dateKey) {
+  if (!dateKey || !/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey))) return;
+  _modalDashDayKey = String(dateKey);
+  const dayJobs = _jobs.filter(j => jobDateKeyFromScheduled(j.scheduled_date) === _modalDashDayKey);
+  const title = document.getElementById('dash-day-title');
+  const list = document.getElementById('dash-day-list');
+  if (!title || !list) return;
+  title.textContent = formatDateKeyUserLong(_modalDashDayKey);
+  if (!dayJobs.length) {
+    list.innerHTML = '<li><div class="empty"><p>No jobs scheduled for this day.</p></div></li>';
+  } else {
+    dayJobs.sort((a, b) => String(a.scheduled_date || '').localeCompare(String(b.scheduled_date || '')));
+    list.innerHTML = dayJobs.map(j => `
+      <li style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div class="ql-name">${esc(j.description || 'Job #' + j.job_id)}</div>
+          <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}${formatJobWhen(j) !== '—' ? ' · ' + esc(formatJobWhen(j)) : ''}${esc(formatJobTimeExtras(j))}${(j.assignee && String(j.assignee).trim()) ? ' · Who: ' + esc(String(j.assignee).trim()) : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+          ${jobPropertyAddress(j) ? `<button type="button" class="btn btn-outline btn-sm" onclick="closeModal('modal-dash-day');openMapForJob(${j.job_id})">Map</button>` : ''}
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('modal-dash-day');openEditJob(${j.job_id})">Edit</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('modal-dash-day');removeJob(${j.job_id})">Remove</button>
+        </div>
+      </li>`).join('');
+  }
+  openModal('modal-dash-day');
+}
+
+function dashDayOpenJobsSchedule() {
+  const key = _modalDashDayKey;
+  closeModal('modal-dash-day');
+  if (key && /^\d{4}-\d{2}-\d{2}$/.test(key)) {
+    try {
+      sessionStorage.setItem('greenops_jobs_day_filter', key);
+    } catch { /* private mode */ }
+  }
+  _jobsActiveTab = 'all';
+  nav('jobs');
+}
+
+function dashCalPrev() {
+  dashCalEnsureInit();
+  _dashCalMonth -= 1;
+  if (_dashCalMonth < 0) {
+    _dashCalMonth = 11;
+    _dashCalYear -= 1;
+  }
+  renderDashCalendar();
+}
+
+function dashCalNext() {
+  dashCalEnsureInit();
+  _dashCalMonth += 1;
+  if (_dashCalMonth > 11) {
+    _dashCalMonth = 0;
+    _dashCalYear += 1;
+  }
+  renderDashCalendar();
+}
+
+function dashCalToday() {
+  const n = new Date();
+  _dashCalYear = n.getFullYear();
+  _dashCalMonth = n.getMonth();
+  renderDashCalendar();
+}
+
+function renderDashCalendar() {
+  dashCalEnsureInit();
+  const wrap = document.getElementById('dash-calendar');
+  const labelEl = document.getElementById('dash-cal-label');
+  if (!wrap || !labelEl) return;
+
+  const y = _dashCalYear;
+  const mo = _dashCalMonth;
+  labelEl.textContent = new Date(y, mo, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  const jobsByDay = new Map();
+  for (const j of _jobs) {
+    const k = jobDateKeyFromScheduled(j.scheduled_date);
+    if (!k) continue;
+    if (!jobsByDay.has(k)) jobsByDay.set(k, []);
+    jobsByDay.get(k).push(j);
+  }
+
+  const dows = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  const firstOfMonth = new Date(y, mo, 1);
+  const offset = (firstOfMonth.getDay() + 6) % 7;
+  const gridStart = new Date(y, mo, 1 - offset);
+
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${dashCalPad2(now.getMonth() + 1)}-${dashCalPad2(now.getDate())}`;
+
+  for (let i = 0; i < 42; i++) {
+    const cell = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+    const ck = `${cell.getFullYear()}-${dashCalPad2(cell.getMonth() + 1)}-${dashCalPad2(cell.getDate())}`;
+    const inMonth = cell.getMonth() === mo && cell.getFullYear() === y;
+    const dayJobs = jobsByDay.get(ck) || [];
+    const cnt = dayJobs.length;
+    const isToday = ck === todayKey;
+
+    const classes = ['cal-cell'];
+    if (!inMonth) classes.push('cal-muted');
+    if (isToday) classes.push('cal-today');
+    if (cnt > 0) classes.push('cal-has');
+    if (jobCalCellPastIncomplete(dayJobs, ck, todayKey)) classes.push('cal-past-incomplete');
+
+    let badges = '<span class="cal-badges">';
+    if (cnt > 0) badges += buildCalStatusDotsHtml(dayJobs);
+    badges += '</span>';
+
+    const onClick = cnt > 0 ? ` onclick="dashCalOpenDay('${ck}')"` : '';
+    const title = cnt > 0 ? ` title="${cnt} job(s) this day — click to view"` : '';
+
+    html += `<div class="${classes.join(' ')}"${onClick}${title}><span class="cal-day-num">${cell.getDate()}</span>${badges}</div>`;
+  }
+
+  wrap.innerHTML = html;
 }
 
 // ══ DASHBOARD ══
@@ -1325,10 +1942,11 @@ async function loadDashboard() {
       <li style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <div class="ql-name">${esc(j.description || 'Job #' + j.job_id)}</div>
-          <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}${formatJobWhen(j) !== '—' ? ' · ' + esc(formatJobWhen(j)) : ''}</div>
+          <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}${formatJobWhen(j) !== '—' ? ' · ' + esc(formatJobWhen(j)) : ''}${esc(formatJobTimeExtras(j))}${(j.assignee && String(j.assignee).trim()) ? ' · Who: ' + esc(String(j.assignee).trim()) : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
           ${jobPropertyAddress(j) ? `<button type="button" class="btn btn-outline btn-sm" onclick="openMapForJob(${j.job_id})">Map</button>` : ''}
+          <button type="button" class="btn btn-outline btn-sm" onclick="openEditJob(${j.job_id})">Edit</button>
           <button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${j.job_id})">Remove</button>
           ${statusBadge(j.workflow_status)}
         </div>
@@ -1352,18 +1970,27 @@ async function loadDashboard() {
         </div>
       </li>`).join('');
   }
+
+  renderDashCalendar();
 }
 
 // ══ JOBS & SCHEDULE ══
 async function loadWorkPage() {
   if (!_customers.length) await loadCustomers();
+  try {
+    const pendingDay = sessionStorage.getItem('greenops_jobs_day_filter');
+    if (pendingDay && /^\d{4}-\d{2}-\d{2}$/.test(pendingDay)) {
+      _jobsDayFilterKey = pendingDay;
+      sessionStorage.removeItem('greenops_jobs_day_filter');
+    }
+  } catch { /* ignore */ }
   const [jobsData, schedData] = await Promise.all([
     api('/api/v1/jobs'),
     api('/api/v1/schedule'),
   ]);
   _jobs = jobsData?.jobs ?? jobsData ?? [];
   renderWeekFromSchedule(schedData);
-  renderJobs(_jobs);
+  renderJobsList();
   await loadRecurringRules();
   setJobsTab(_jobsActiveTab);
   populateCustomerDropdowns();
@@ -1376,7 +2003,7 @@ async function loadJobs() {
 function renderJobs(arr) {
   const tbody = document.getElementById('jobs-tbody');
   if (!arr.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
       <p>No jobs found</p></div></td></tr>`;
     return;
@@ -1384,33 +2011,160 @@ function renderJobs(arr) {
   tbody.innerHTML = arr.map(j => `
     <tr>
       <td><strong>#${j.job_id}</strong></td>
-      <td style="white-space:nowrap;font-size:.86rem">${esc(formatJobWhen(j))}</td>
+      <td style="white-space:nowrap;font-size:.86rem">${esc(formatJobWhen(j))}${esc(formatJobTimeExtras(j))}</td>
       <td>${esc(j.customer?.name || '—')}</td>
+      <td>${j.assignee && String(j.assignee).trim() ? esc(String(j.assignee).trim()) : '—'}</td>
       <td>${esc(j.property?.address || j.property_info?.address || '—')}</td>
       <td>${esc((j.description || '').slice(0, 60))}</td>
       <td>${statusBadge(j.workflow_status)}</td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="openMapForJob(${j.job_id})">Map</button>
-        <button type="button" class="btn btn-outline btn-sm" onclick="viewJob(${j.job_id})">View</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openEditJob(${j.job_id})">Edit</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${j.job_id})">Remove</button>
       </td>
     </tr>`).join('');
 }
 
-function filterJobs(q) {
-  const ql = (q || '').toLowerCase();
-  const f = _jobs.filter(j =>
-    (j.description || '').toLowerCase().includes(ql) ||
-    (j.customer?.name || '').toLowerCase().includes(ql) ||
-    String(formatJobWhen(j)).toLowerCase().includes(ql)
-  );
-  renderJobs(f);
+function updateJobsDayFilterBanner() {
+  const wrap = document.getElementById('jobs-day-filter-banner');
+  const lbl = document.getElementById('jobs-day-filter-label');
+  if (!wrap || !lbl) return;
+  if (!_jobsDayFilterKey) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  lbl.textContent = 'Showing work for ' + formatDateKeyUserLong(_jobsDayFilterKey);
 }
 
-function viewJob(id) {
-  const j = _jobs.find(x => Number(x.job_id) === Number(id));
-  const when = j ? formatJobWhen(j) : '—';
-  toast('Job #' + id + (when !== '—' ? ' · ' + when : '') + ' — detail view coming soon');
+function clearJobsDayFilter() {
+  _jobsDayFilterKey = null;
+  const searchEl = document.getElementById('job-search');
+  if (searchEl) searchEl.value = '';
+  updateJobsDayFilterBanner();
+  renderJobsList();
+}
+
+function renderJobsList() {
+  updateJobsDayFilterBanner();
+  const qEl = document.getElementById('job-search');
+  let list = _jobs;
+  if (_jobsDayFilterKey) {
+    list = list.filter(j => jobDateKeyFromScheduled(j.scheduled_date) === _jobsDayFilterKey);
+  }
+  if (qEl && qEl.value && String(qEl.value).trim()) {
+    const ql = String(qEl.value).toLowerCase();
+    list = list.filter(j =>
+      (j.description || '').toLowerCase().includes(ql) ||
+      (j.customer?.name || '').toLowerCase().includes(ql) ||
+      String(j.assignee || '').toLowerCase().includes(ql) ||
+      String(formatJobWhen(j)).toLowerCase().includes(ql) ||
+      String(formatJobTimeExtras(j)).toLowerCase().includes(ql) ||
+      String(j.estimated_duration_minutes != null ? j.estimated_duration_minutes : '').includes(ql) ||
+      String(j.hours_worked != null ? j.hours_worked : '').includes(ql)
+    );
+  }
+  renderJobs(list);
+}
+
+function filterJobs(_q) {
+  renderJobsList();
+}
+
+async function openEditJob(id) {
+  const jid = Number(id);
+  if (!jid || Number.isNaN(jid)) return;
+  if (!_customers.length) await loadCustomers();
+  populateCustomerDropdowns();
+  let j = _jobs.find(x => Number(x.job_id) === jid);
+  if (!j) {
+    try {
+      const r = await fetch('/api/v1/jobs/' + encodeURIComponent(jid));
+      if (!r.ok) throw new Error();
+      j = await r.json();
+      const ix = _jobs.findIndex(x => Number(x.job_id) === jid);
+      if (ix >= 0) _jobs[ix] = j;
+      else _jobs.push(j);
+    } catch {
+      toast('Job not found', 'error');
+      return;
+    }
+  }
+  document.getElementById('ej-job-id').value = String(j.job_id);
+  const custSel = document.getElementById('ej-customer');
+  const cid = j.customer_id != null ? String(j.customer_id) : (j.customer && j.customer.id != null ? String(j.customer.id) : '');
+  custSel.value = cid;
+  document.getElementById('ej-status').value = j.workflow_status || 'Scheduled';
+  const asg = document.getElementById('ej-assignee');
+  if (asg) asg.value = j.assignee || '';
+  const dtEl = document.getElementById('ej-datetime');
+  if (dtEl) dtEl.value = jobScheduledToDatetimeLocal(j.scheduled_date);
+  document.getElementById('ej-description').value = j.description || '';
+  const eEst = document.getElementById('ej-estimated');
+  if (eEst) eEst.value = (j.estimated_duration_minutes != null && j.estimated_duration_minutes !== '') ? String(j.estimated_duration_minutes) : '';
+  const eHw = document.getElementById('ej-hours-worked');
+  if (eHw) eHw.value = (j.hours_worked != null && j.hours_worked !== '') ? String(j.hours_worked) : '';
+  syncEjJobTimeFields();
+  openModal('modal-edit-job');
+}
+
+async function saveJobEdit() {
+  const jid = document.getElementById('ej-job-id').value;
+  if (!jid) return;
+  const desc = document.getElementById('ej-description').value.trim();
+  if (!desc) { toast('Please enter a description', 'error'); return; }
+  const custId = document.getElementById('ej-customer').value;
+  if (!custId) { toast('Please select a customer', 'error'); return; }
+  const status = document.getElementById('ej-status').value;
+  const dtEl = document.getElementById('ej-datetime');
+  const dtVal = dtEl && dtEl.value ? dtEl.value.trim() : '';
+  const payload = {
+    description: desc,
+    customer_id: Number(custId),
+    property_id: Number(custId),
+    workflow_status: status,
+  };
+  if (dtVal) payload.scheduled_date = dtVal.length === 16 ? dtVal + ':00' : dtVal;
+  else payload.scheduled_date = null;
+  const assignee = (document.getElementById('ej-assignee') && document.getElementById('ej-assignee').value || '').trim();
+  payload.assignee = assignee || null;
+  const stl = String(status || '').trim().toLowerCase();
+  if (stl === 'scheduled') {
+    const raw = (document.getElementById('ej-estimated') && document.getElementById('ej-estimated').value || '').trim();
+    if (raw === '') payload.estimated_duration_minutes = null;
+    else {
+      const n = parseInt(raw, 10);
+      if (Number.isNaN(n) || n < 0) { toast('Enter a valid estimated minutes (whole number) or leave blank', 'error'); return; }
+      payload.estimated_duration_minutes = n;
+    }
+  } else if (stl === 'in progress' || stl === 'completed') {
+    const raw = (document.getElementById('ej-hours-worked') && document.getElementById('ej-hours-worked').value || '').trim();
+    if (raw === '') payload.hours_worked = null;
+    else {
+      const n = parseFloat(raw);
+      if (Number.isNaN(n) || n < 0) { toast('Enter valid hours worked or leave blank', 'error'); return; }
+      payload.hours_worked = n;
+    }
+  }
+  try {
+    const r = await fetch('/api/v1/jobs/' + encodeURIComponent(jid), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const updated = await r.json();
+    const ix = _jobs.findIndex(x => Number(x.job_id) === Number(jid));
+    if (ix >= 0) _jobs[ix] = updated;
+    toast('Job saved');
+    closeModal('modal-edit-job');
+    renderJobsList();
+    const schedData = await api('/api/v1/schedule');
+    if (schedData) renderWeekFromSchedule(schedData);
+    loadDashboard();
+  } catch (e) {
+    toast('Could not save job', 'error');
+  }
 }
 
 async function removeJob(jobId) {
@@ -1441,6 +2195,24 @@ async function createJob() {
     workflow_status: status,
   };
   if (dtVal) payload.scheduled_date = dtVal.length === 16 ? dtVal + ':00' : dtVal;
+  const assignee = (document.getElementById('nj-assignee') && document.getElementById('nj-assignee').value || '').trim();
+  if (assignee) payload.assignee = assignee;
+  const stl = String(status || '').trim().toLowerCase();
+  if (stl === 'scheduled') {
+    const raw = (document.getElementById('nj-estimated') && document.getElementById('nj-estimated').value || '').trim();
+    if (raw !== '') {
+      const n = parseInt(raw, 10);
+      if (Number.isNaN(n) || n < 0) { toast('Enter a valid estimated minutes or leave blank', 'error'); return; }
+      payload.estimated_duration_minutes = n;
+    }
+  } else if (stl === 'in progress' || stl === 'completed') {
+    const raw = (document.getElementById('nj-hours-worked') && document.getElementById('nj-hours-worked').value || '').trim();
+    if (raw !== '') {
+      const n = parseFloat(raw);
+      if (Number.isNaN(n) || n < 0) { toast('Enter valid hours worked or leave blank', 'error'); return; }
+      payload.hours_worked = n;
+    }
+  }
   const r = await api('/api/v1/jobs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1450,6 +2222,12 @@ async function createJob() {
     toast('Job created');
     closeModal('modal-new-job');
     document.getElementById('nj-description').value = '';
+    const asg = document.getElementById('nj-assignee');
+    if (asg) asg.value = '';
+    const nje = document.getElementById('nj-estimated');
+    if (nje) nje.value = '';
+    const njh = document.getElementById('nj-hours-worked');
+    if (njh) njh.value = '';
     if (dtEl) dtEl.value = '';
     loadJobs();
     loadDashboard();
@@ -1655,7 +2433,7 @@ async function createCustomer() {
 }
 
 function populateCustomerDropdowns() {
-  ['nj-customer', 'nq-customer', 'eq-customer', 'ni-customer', 'ei-customer'].forEach(id => {
+  ['nj-customer', 'ej-customer', 'nq-customer', 'eq-customer', 'ni-customer', 'ei-customer'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const cur = sel.value;
@@ -1816,10 +2594,6 @@ function renderWeekFromSchedule(data) {
   el.classList.remove('loading');
   const slots = data?.slots ?? [];
   const unsched = data?.unscheduled ?? [];
-  const range =
-    data?.week_start && data?.week_end_exclusive
-      ? `<p style="font-size:.82rem;color:var(--muted);margin:0 0 1rem">Week <strong>${esc(data.week_start)}</strong> → <strong>${esc(data.week_end_exclusive)}</strong> (${esc(data.timezone || 'Pacific/Auckland')})</p>`
-      : '';
 
   function rowHtml(s) {
     const when = s.scheduled_at || s.date || '—';
@@ -1828,19 +2602,22 @@ function renderWeekFromSchedule(data) {
         ? when.replace('T', ' ').slice(0, 16)
         : esc(when);
     const jid = s.job_id != null ? Number(s.job_id) : null;
+    const whoDisp = (s.assignee && String(s.assignee).trim()) ? esc(String(s.assignee).trim()) : '—';
+    const timeExtra = esc(formatJobTimeExtras(s));
     return `<tr>
-      <td style="white-space:nowrap">${label}</td>
+      <td style="white-space:nowrap">${label}${timeExtra ? '<br><span style="font-size:.72rem;color:var(--muted);font-weight:600">' + timeExtra + '</span>' : ''}</td>
       <td>${esc(s.job_description || s.description || (s.job_id != null ? 'Job #' + s.job_id : '—'))}</td>
       <td>${esc(s.customer_name || s.customer?.name || '—')}</td>
+      <td>${whoDisp}</td>
       <td>${statusBadge(s.status)}</td>
       <td style="white-space:nowrap">
-        <button type="button" class="btn btn-outline btn-sm" onclick="viewJob(${Number(s.job_id)})">View</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openEditJob(${Number(s.job_id)})">Edit</button>
         ${jid != null && !Number.isNaN(jid) ? `<button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${jid})">Remove</button>` : ''}
       </td>
     </tr>`;
   }
 
-  let body = range;
+  let body = '';
   if (!slots.length && !unsched.length) {
     body += `<div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -1852,7 +2629,7 @@ function renderWeekFromSchedule(data) {
   if (slots.length) {
     body += `<h4 style="font-size:.88rem;font-weight:700;margin:0 0 .5rem;color:var(--green-900)">Dated this week</h4>
       <div class="table-wrap"><table>
-      <thead><tr><th>When</th><th>Job</th><th>Customer</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>When</th><th>Job</th><th>Customer</th><th>Who's job</th><th>Status</th><th></th></tr></thead>
       <tbody>${slots.map(rowHtml).join('')}</tbody></table></div>`;
   } else {
     body += `<p style="font-size:.85rem;color:var(--muted);margin:0 0 .75rem">No jobs with a date in this week. Open <strong>All jobs</strong> to review work, or add dates to jobs when you schedule crews.</p>`;
@@ -1860,9 +2637,8 @@ function renderWeekFromSchedule(data) {
 
   if (unsched.length) {
     body += `<h4 style="font-size:.88rem;font-weight:700;margin:1.1rem 0 .5rem;color:var(--green-900)">No date yet</h4>
-      <p style="font-size:.82rem;color:var(--muted);margin:-.25rem 0 .5rem">These jobs are saved but do not have a scheduled time. Assign dates when you plan the route.</p>
       <div class="table-wrap"><table>
-      <thead><tr><th>When</th><th>Job</th><th>Customer</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>When</th><th>Job</th><th>Customer</th><th>Who's job</th><th>Status</th><th></th></tr></thead>
       <tbody>${unsched.map(rowHtml).join('')}</tbody></table></div>`;
   }
 
@@ -2519,6 +3295,7 @@ function esc(s) {
 loadWeather();
 hydrateBusinessBranding();
 loadDashboard();
+if (document.getElementById('nj-status')) syncNjJobTimeFields();
 </script>
 </body>
 </html>

@@ -28,6 +28,43 @@ class TestJobAPI(unittest.TestCase):
         response = self.client.delete("/api/v1/jobs/99999")
         self.assertEqual(response.status_code, 404)
 
+    def test_patch_job_assignee(self) -> None:
+        r = self.client.patch("/api/v1/jobs/1", json={"assignee": "Jordan"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json().get("assignee"), "Jordan")
+        got = self.client.get("/api/v1/jobs/1").json()
+        self.assertEqual(got.get("assignee"), "Jordan")
+
+    def test_patch_job_customer_refreshes_nested_customer(self) -> None:
+        r = self.client.patch("/api/v1/jobs/1", json={"customer_id": 2, "property_id": 2})
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data.get("customer_id"), 2)
+        cust = data.get("customer") or {}
+        self.assertEqual(cust.get("id"), 2)
+        self.assertIn("name", cust)
+
+    def test_patch_job_unknown_customer(self) -> None:
+        r = self.client.patch("/api/v1/jobs/1", json={"customer_id": 99999})
+        self.assertEqual(r.status_code, 404)
+
+    def test_patch_job_estimated_minutes(self) -> None:
+        r = self.client.patch("/api/v1/jobs/1", json={"estimated_duration_minutes": 90})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json().get("estimated_duration_minutes"), 90)
+        got = self.client.get("/api/v1/jobs/1").json()
+        self.assertEqual(got.get("estimated_duration_minutes"), 90)
+
+    def test_patch_job_hours_worked(self) -> None:
+        r = self.client.patch(
+            "/api/v1/jobs/1",
+            json={"workflow_status": "In Progress", "hours_worked": 2.5},
+        )
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data.get("hours_worked"), 2.5)
+        self.assertEqual(data.get("workflow_status"), "In Progress")
+
 
 def test_update_job_version_mismatch() -> None:
     with pytest.raises(ValueError, match="Version mismatch: Job has been modified by another user."):

@@ -26,14 +26,22 @@ def apply_sqlite_migrations(engine) -> None:
         return
     insp = inspect(engine)
     tables = set(insp.get_table_names())
-    if "quotes" not in tables:
-        return
-    cols = {c["name"] for c in insp.get_columns("quotes")}
-    with engine.begin() as conn:
-        if "line_items_json" not in cols:
-            conn.execute(text("ALTER TABLE quotes ADD COLUMN line_items_json TEXT"))
-        if "discount_ex_gst" not in cols:
-            conn.execute(text("ALTER TABLE quotes ADD COLUMN discount_ex_gst FLOAT"))
+    if "quotes" in tables:
+        cols = {c["name"] for c in insp.get_columns("quotes")}
+        with engine.begin() as conn:
+            if "line_items_json" not in cols:
+                conn.execute(text("ALTER TABLE quotes ADD COLUMN line_items_json TEXT"))
+            if "discount_ex_gst" not in cols:
+                conn.execute(text("ALTER TABLE quotes ADD COLUMN discount_ex_gst FLOAT"))
+    if "jobs" in tables:
+        job_cols = {c["name"] for c in insp.get_columns("jobs")}
+        with engine.begin() as conn:
+            if "assignee" not in job_cols:
+                conn.execute(text("ALTER TABLE jobs ADD COLUMN assignee VARCHAR"))
+            if "estimated_duration_minutes" not in job_cols:
+                conn.execute(text("ALTER TABLE jobs ADD COLUMN estimated_duration_minutes INTEGER"))
+            if "hours_worked" not in job_cols:
+                conn.execute(text("ALTER TABLE jobs ADD COLUMN hours_worked FLOAT"))
 
 
 def ensure_demo_invoice_if_empty(db: Session) -> None:
@@ -192,6 +200,9 @@ def seed_database_if_empty(db: Session) -> None:
             property_address=paddr,
         )
         detail["scheduled_date"] = visit_iso
+        seed_assignee = "Alex" if jid == 1 else ("Sam" if jid == 2 else None)
+        if seed_assignee:
+            detail["assignee"] = seed_assignee
         db.add(
             Job(
                 id=jid,
@@ -199,6 +210,7 @@ def seed_database_if_empty(db: Session) -> None:
                 property_id=pid,
                 description=desc,
                 workflow_status="Scheduled",
+                assignee=seed_assignee,
                 scheduled_date=visit_dt,
                 detail_json=json.dumps(detail),
             )

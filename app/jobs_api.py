@@ -5,7 +5,7 @@ import io
 import json
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, status
 from fastapi.responses import JSONResponse, Response
@@ -53,9 +53,60 @@ def _job_dict_from_row(job: JobORM) -> dict[str, Any]:
     merged["property_id"] = job.property_id
     merged["description"] = job.description or ""
     merged["workflow_status"] = job.workflow_status or "Scheduled"
+    col_assignee = getattr(job, "assignee", None)
+    if col_assignee is not None and str(col_assignee).strip():
+        merged["assignee"] = str(col_assignee).strip()
+    elif merged.get("assignee"):
+        merged["assignee"] = str(merged["assignee"]).strip() or None
+    else:
+        merged["assignee"] = None
     if job.scheduled_date is not None:
         merged["scheduled_date"] = nz_wall_naive_to_iso_with_offset(job.scheduled_date)
+    if getattr(job, "estimated_duration_minutes", None) is not None:
+        merged["estimated_duration_minutes"] = int(job.estimated_duration_minutes)
+    elif "estimated_duration_minutes" not in merged:
+        merged["estimated_duration_minutes"] = None
+    if getattr(job, "hours_worked", None) is not None:
+        merged["hours_worked"] = float(job.hours_worked)
+    elif "hours_worked" not in merged:
+        merged["hours_worked"] = None
     return merged
+
+
+def _parse_optional_estimated_minutes(val: Any) -> Optional[int]:
+    if val is None or val == "":
+        return None
+    try:
+        n = int(val)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="estimated_duration_minutes must be a non-negative integer",
+        ) from None
+    if n < 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="estimated_duration_minutes must be non-negative",
+        )
+    return n
+
+
+def _parse_optional_hours_worked(val: Any) -> Optional[float]:
+    if val is None or val == "":
+        return None
+    try:
+        x = float(val)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="hours_worked must be a non-negative number",
+        ) from None
+    if x < 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="hours_worked must be non-negative",
+        )
+    return round(x, 4)
 
 
 def _coerce_int(val: Any, default: int) -> int:
@@ -74,6 +125,7 @@ def _build_job_detail_json(
     customer_email: str,
     property_address: str,
     scheduled_date_iso: str | None = None,
+    assignee: str | None = None,
 ) -> str:
     detail: dict[str, Any] = {
         "job_id": job_id,
@@ -81,6 +133,7 @@ def _build_job_detail_json(
         "property_id": property_id,
         "description": description,
         "workflow_status": workflow_status,
+        "assignee": (assignee or "").strip() or None,
         "property": {"property_id": property_id, "address": property_address or "—"},
         "property_info": {
             "property_id": property_id,
@@ -98,6 +151,29 @@ def _build_job_detail_json(
     return json.dumps(detail)
 
 
+def _refresh_job_detail_contact(db: Session, data: dict[str, Any]) -> None:
+    """Keep ``customer`` / ``property`` blobs in ``detail_json`` aligned with FK ids."""
+    try:
+        cid = int(data.get("customer_id") or 0)
+    except (TypeError, ValueError):
+        return
+    if cid <= 0:
+        return
+    cust = db.get(CustomerORM, cid)
+    if cust is None:
+        return
+    try:
+        pid = int(data.get("property_id") or cid)
+    except (TypeError, ValueError):
+        pid = cid
+    addr = (cust.address or "").strip() or "—"
+    prev_pi = data.get("property_info") if isinstance(data.get("property_info"), dict) else {}
+    access_notes = str(prev_pi.get("access_notes") or "")
+    data["customer"] = {"id": cust.id, "name": cust.name or "Customer", "email": (cust.email or "").strip()}
+    data["property"] = {"property_id": pid, "address": addr}
+    data["property_info"] = {"property_id": pid, "address": addr, "access_notes": access_notes}
+
+
 def _persist_job_dict(db: Session, job_id: int, data: dict[str, Any]) -> None:
     row = db.get(JobORM, job_id)
     if row is None:
@@ -106,8 +182,17 @@ def _persist_job_dict(db: Session, job_id: int, data: dict[str, Any]) -> None:
     row.property_id = int(data.get("property_id", row.property_id))
     row.description = str(data.get("description", row.description or ""))
     row.workflow_status = str(data.get("workflow_status", row.workflow_status or "Scheduled"))
+    if "assignee" in data:
+        raw_a = data.get("assignee")
+        row.assignee = (str(raw_a).strip() if raw_a is not None else "") or None
     if "scheduled_date" in data:
         row.scheduled_date = parse_any_to_naive_nz_wall(data.get("scheduled_date"))
+    if "estimated_duration_minutes" in data:
+        v = data.get("estimated_duration_minutes")
+        row.estimated_duration_minutes = None if v in (None, "") else int(v)
+    if "hours_worked" in data:
+        v = data.get("hours_worked")
+        row.hours_worked = None if v in (None, "") else float(v)
     row.detail_json = json.dumps(data)
 
 
@@ -170,6 +255,31 @@ def patch_job(
     after = dict(before)
     for key, value in body.items():
         after[key] = value
+    if "customer_id" in body:
+        try:
+            new_cid = int(after["customer_id"])
+        except (TypeError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="customer_id must be an integer",
+            ) from None
+        cust = db.get(CustomerORM, new_cid)
+        if cust is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
+        if cust.is_archived:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot assign job to an archived customer",
+            )
+        if "property_id" not in body:
+            after["property_id"] = new_cid
+    if "estimated_duration_minutes" in body:
+        after["estimated_duration_minutes"] = _parse_optional_estimated_minutes(
+            body.get("estimated_duration_minutes")
+        )
+    if "hours_worked" in body:
+        after["hours_worked"] = _parse_optional_hours_worked(body.get("hours_worked"))
+    _refresh_job_detail_contact(db, after)
     _persist_job_dict(db, job_id, after)
     db.commit()
     db.refresh(row)
@@ -295,28 +405,48 @@ def create_job(
     cname = cust.name or "Customer"
     cemail = (cust.email or "").strip()
     addr = (cust.address or "").strip()
+    assignee_raw = body.get("assignee")
+    assignee_val = (str(assignee_raw).strip() if assignee_raw is not None else "") or None
+
+    est_m: int | None = None
+    if "estimated_duration_minutes" in body:
+        est_m = _parse_optional_estimated_minutes(body.get("estimated_duration_minutes"))
+    hrs: float | None = None
+    if "hours_worked" in body:
+        hrs = _parse_optional_hours_worked(body.get("hours_worked"))
 
     row = JobORM(
         customer_id=customer_id,
         property_id=property_id,
         description=description,
         workflow_status=workflow_status,
+        assignee=assignee_val,
         scheduled_date=scheduled_dt,
+        estimated_duration_minutes=est_m,
+        hours_worked=hrs,
         detail_json=None,
     )
     db.add(row)
     db.flush()
-    row.detail_json = _build_job_detail_json(
-        row.id,
-        customer_id,
-        property_id,
-        description,
-        workflow_status,
-        cname,
-        cemail,
-        addr,
-        scheduled_date_iso=scheduled_iso_str,
+    detail_obj: dict[str, Any] = json.loads(
+        _build_job_detail_json(
+            row.id,
+            customer_id,
+            property_id,
+            description,
+            workflow_status,
+            cname,
+            cemail,
+            addr,
+            scheduled_date_iso=scheduled_iso_str,
+            assignee=assignee_val,
+        )
     )
+    if est_m is not None:
+        detail_obj["estimated_duration_minutes"] = est_m
+    if hrs is not None:
+        detail_obj["hours_worked"] = hrs
+    row.detail_json = json.dumps(detail_obj)
     db.commit()
     db.refresh(row)
     return JSONResponse({"success": True, "message": "Job created successfully"})
@@ -332,19 +462,25 @@ def list_jobs(db: Session = Depends(get_db)) -> dict[str, list[dict[str, Any]]]:
 def export_jobs_csv(db: Session = Depends(get_db)) -> Response:
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["Job ID", "Job Name", "Customer", "Scheduled Date", "Status"])
+    writer.writerow(["Job ID", "Job Name", "Customer", "Assigned to", "Scheduled Date", "Est (min)", "Hours worked", "Status"])
     rows = db.query(JobORM).order_by(JobORM.id).all()
     for job in rows:
         data = _job_dict_from_row(job)
         cust = data.get("customer") or {}
         cust_name = cust.get("name", "") if isinstance(cust, dict) else ""
         sched = data.get("scheduled_date") or ""
+        assignee = data.get("assignee") or ""
+        est = data.get("estimated_duration_minutes")
+        hw = data.get("hours_worked")
         writer.writerow(
             [
                 job.id,
                 (job.description or "")[:80] or "Job",
                 cust_name,
+                assignee,
                 str(sched),
+                "" if est is None else str(est),
+                "" if hw is None else str(hw),
                 job.workflow_status or "",
             ]
         )

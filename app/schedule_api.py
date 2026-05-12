@@ -70,6 +70,9 @@ def get_schedule_week(db: Session = Depends(get_db)) -> dict[str, Any]:
             "customer_name": cname,
             "customer": {"id": job.customer_id, "name": cname} if job.customer_id is not None else None,
             "status": job.workflow_status or "Scheduled",
+            "assignee": (getattr(job, "assignee", None) or "").strip() or None,
+            "estimated_duration_minutes": getattr(job, "estimated_duration_minutes", None),
+            "hours_worked": getattr(job, "hours_worked", None),
         }
         if when is None:
             unscheduled.append({**base, "scheduled_at": None, "date": None})

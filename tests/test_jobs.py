@@ -16,3 +16,5 @@ def test_get_job_details():
     assert "materials" in data
     assert "attachments" in data
     assert "weather_context" in data
+    assert "estimated_duration_minutes" in data
+    assert "hours_worked" in data
