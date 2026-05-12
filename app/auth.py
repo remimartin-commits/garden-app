@@ -3,11 +3,15 @@ from __future__ import annotations
 from typing import Any
 
 
+import os
+
 def authenticate_user(username: str, password: str) -> str | None:
-    """Return a session token for valid active users; ``None`` otherwise (demo logic)."""
-    if username == "owner" and password == "correct_password":
+    expected_user = os.getenv("OWNER_USERNAME", "owner")
+    expected_pass = os.getenv("OWNER_PASSWORD", "")
+    if username == expected_user and password == expected_pass and expected_pass:
         return "session-token"
     return None
+
 
 
 def _permission_set(principal: Any) -> set[str]:
