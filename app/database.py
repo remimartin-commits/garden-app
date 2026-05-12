@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.models import Base, Customer, Invoice, Job, Payment, Quote
 from app.nz_time import nz_naive_now, nz_today
 
-DATABASE_URL = "sqlite:///./garden_local.db"
+import os
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./garden_local.db")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
