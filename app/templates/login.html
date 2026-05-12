@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — GreenOps</title>
+  <style>
+    :root {
+      --bg: #0f1a14;
+      --card: #16261c;
+      --border: #2a3d30;
+      --text: #e8f0ea;
+      --muted: #8aa896;
+      --accent: #3d9a5c;
+      --danger: #c45c5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(ellipse 120% 80% at 50% -20%, #1a3326 0%, var(--bg) 55%);
+      color: var(--text);
+    }
+    .card {
+      width: 100%; max-width: 380px; padding: 2rem 1.75rem;
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    }
+    h1 { font-size: 1.35rem; font-weight: 650; margin: 0 0 .25rem; letter-spacing: -0.02em; }
+    p.sub { margin: 0 0 1.5rem; font-size: .9rem; color: var(--muted); }
+    label { display: block; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: .35rem; }
+    input {
+      width: 100%; padding: .65rem .75rem; margin-bottom: 1rem;
+      border: 1px solid var(--border); border-radius: 8px; background: #0f1812; color: var(--text); font-size: 1rem;
+    }
+    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+    button {
+      width: 100%; padding: .75rem 1rem; margin-top: .25rem;
+      border: none; border-radius: 8px; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer;
+    }
+    button:hover { filter: brightness(1.08); }
+    .err { background: rgba(196,92,92,.12); border: 1px solid rgba(196,92,92,.35); color: #f0b4b4; padding: .65rem .75rem; border-radius: 8px; font-size: .88rem; margin-bottom: 1rem; }
+    .hint { margin-top: 1.25rem; font-size: .75rem; color: var(--muted); line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>GreenOps</h1>
+    <p class="sub">Sign in to manage jobs, customers, and billing.</p>
+    {% if error %}
+    <div class="err">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/login" autocomplete="current-password">
+      <input type="hidden" name="next" value="{{ next|e }}">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" required autocomplete="username" autofocus>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password">
+      <button type="submit">Sign in</button>
+    </form>
+    <p class="hint">Credentials are configured on the server (<code>OWNER_USERNAME</code> / <code>OWNER_PASSWORD</code>).</p>
+  </div>
+</body>
+</html>

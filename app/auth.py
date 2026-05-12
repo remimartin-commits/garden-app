@@ -2,16 +2,24 @@ from __future__ import annotations
 
 from typing import Any
 
+from app import config
 
-import os
+SESSION_USER_SESSION_KEY = "owner_username"
+
+
+def verify_owner_credentials(username: str, password: str) -> bool:
+    """True if username/password match configured owner (from env via config)."""
+    u = (username or "").strip()
+    p = password or ""
+    expected = (config.OWNER_PASSWORD or "").strip()
+    if not expected:
+        return False
+    return u == (config.OWNER_USERNAME or "").strip() and p == expected
+
 
 def authenticate_user(username: str, password: str) -> str | None:
-    expected_user = os.getenv("OWNER_USERNAME", "owner")
-    expected_pass = os.getenv("OWNER_PASSWORD", "")
-    if username == expected_user and password == expected_pass and expected_pass:
-        return "session-token"
-    return None
-
+    """Legacy helper: returns a non-empty token string on success."""
+    return "session-token" if verify_owner_credentials(username, password) else None
 
 
 def _permission_set(principal: Any) -> set[str]:

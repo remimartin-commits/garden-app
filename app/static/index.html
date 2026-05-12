@@ -662,7 +662,12 @@
       Settings
     </a>
   </nav>
-  <div class="sidebar-footer">GreenOps v1.0</div>
+  <div class="sidebar-footer">
+    <form method="post" action="/logout" style="margin:0 0 .5rem 0">
+      <button type="submit" class="btn btn-outline btn-sm" style="width:100%">Log out</button>
+    </form>
+    GreenOps v1.0
+  </div>
 </aside>
 
 <!-- ══ MAIN APP ══ -->
@@ -1641,6 +1646,33 @@
 <div id="toast"></div>
 
 <script>
+(function () {
+  const nativeFetch = window.fetch.bind(window);
+  function isApiRequest(input) {
+    try {
+      if (typeof input === 'string') {
+        const p = input.split('?')[0];
+        return p.indexOf('/api') === 0 || p === '/openapi.json';
+      }
+      if (typeof Request !== 'undefined' && input instanceof Request) {
+        const u = String(input.url);
+        const path = u.replace(/^https?:\/\/[^/]+/i, '').split('?')[0];
+        return path.indexOf('/api') === 0 || path === '/openapi.json';
+      }
+    } catch (e) { /* noop */ }
+    return false;
+  }
+  window.fetch = function (input, init) {
+    init = init === undefined ? {} : Object.assign({}, init);
+    if (init.credentials === undefined) init.credentials = 'same-origin';
+    return nativeFetch(input, init).then(function (r) {
+      if (r.status === 401 && isApiRequest(input)) {
+        window.location.assign('/login?next=' + encodeURIComponent(window.location.pathname + window.location.search));
+      }
+      return r;
+    });
+  };
+})();
 // ══ STATE ══
 let _customers = [];
 let _jobs = [];

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 import unittest
 
 from fastapi.testclient import TestClient
@@ -9,7 +11,7 @@ from app.main import app
 
 class TestDashboard(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app)
+        self.client = auth_test_client()
 
     def test_get_dashboard(self) -> None:
         response = self.client.get("/api/v1/dashboard")

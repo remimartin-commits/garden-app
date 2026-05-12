@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 import unittest
 
 import pytest
@@ -11,7 +13,7 @@ from app.main import app
 
 class TestJobAPI(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(app)
+        self.client = auth_test_client()
 
     def test_get_job_valid_id(self) -> None:
         response = self.client.get("/api/v1/jobs/1")
@@ -103,7 +105,7 @@ def test_update_job_version_mismatch() -> None:
 
 
 def test_post_job_complete_requires_idempotency_header() -> None:
-    client = TestClient(app)
+    client = auth_test_client()
     body = {
         "actual_duration_minutes": 30,
         "checklist_results": [{"description": "Done", "completed": True}],
@@ -117,7 +119,7 @@ def test_post_job_complete_requires_idempotency_header() -> None:
 
 
 def test_post_job_complete_idempotent_records_fields() -> None:
-    client = TestClient(app)
+    client = auth_test_client()
     headers = {"Idempotency-Key": "task-79-key"}
     body = {
         "actual_duration_minutes": 45,

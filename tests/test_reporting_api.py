@@ -1,9 +1,10 @@
+from tests.http_helpers import auth_test_client
 
 from fastapi.testclient import TestClient
 from app.main import app
 from app.entities import BusinessPerformanceReportParams
 
-client = TestClient(app)
+client = auth_test_client()
 
 def test_get_business_performance_report():
     response = client.get("/api/v1/reports/business-performance", params={

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -8,7 +10,7 @@ from app.main import app
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(app)
+    return auth_test_client()
 
 
 def test_get_invoice_returns_invoice_and_payments(client: TestClient) -> None:

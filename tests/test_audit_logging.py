@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+client = auth_test_client()
 
 
 def test_audit_logs_endpoint_returns_logs() -> None:

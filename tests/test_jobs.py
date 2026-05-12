@@ -1,10 +1,12 @@
 from __future__ import annotations
+
+from tests.http_helpers import auth_test_client
 import pytest
 from app.main import app
 from starlette.testclient import TestClient
 from app.entities import Job
 
-client = TestClient(app)
+client = auth_test_client()
 
 def test_get_job_details():
     response = client.get("/api/v1/jobs/1")

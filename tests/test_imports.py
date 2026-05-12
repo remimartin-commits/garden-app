@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 from io import BytesIO
 
 from fastapi.testclient import TestClient
@@ -8,7 +10,7 @@ from app.database import SessionLocal
 from app.main import app
 from app.models import Customer as CustomerORM
 
-client = TestClient(app)
+client = auth_test_client()
 
 
 def _customer_count() -> int:

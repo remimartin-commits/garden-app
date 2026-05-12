@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+client = auth_test_client()
 
 
 def test_create_recurring_job_rule_success() -> None:

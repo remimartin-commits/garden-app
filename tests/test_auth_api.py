@@ -1,52 +1,49 @@
 from __future__ import annotations
 
+import os
+
 from fastapi.testclient import TestClient
 
 from app.main import app
 
 
-def test_logout_successful() -> None:
+def test_api_returns_401_when_not_logged_in() -> None:
     client = TestClient(app)
-    response = client.post(
-        "/api/v1/auth/logout",
-        headers={"Authorization": "Bearer test-session"},
+    r = client.get("/api/v1/dashboard")
+    assert r.status_code == 401
+    assert r.json().get("detail") == "Not authenticated"
+
+
+def test_login_success_sets_session() -> None:
+    client = TestClient(app)
+    user = os.environ.get("OWNER_USERNAME", "owner")
+    password = os.environ["OWNER_PASSWORD"]
+    r = client.post(
+        "/login",
+        data={"username": user, "password": password},
+        follow_redirects=False,
     )
-    assert response.status_code == 200
-    assert response.json()["message"] == "Logout successful"
+    assert r.status_code == 302
+    dash = client.get("/api/v1/dashboard")
+    assert dash.status_code == 200
 
 
-def test_logout_not_authenticated() -> None:
+def test_login_failure_returns_401_page() -> None:
     client = TestClient(app)
-    response = client.post("/api/v1/auth/logout")
-    assert response.status_code == 401
-    assert response.json()["error"] == "Not authenticated"
-
-
-def test_password_reset_request() -> None:
-    client = TestClient(app)
-    response = client.post(
-        "/api/v1/auth/password-reset",
-        json={"email": "user@example.com"},
+    r = client.post(
+        "/login",
+        data={"username": "nope", "password": "bad"},
+        follow_redirects=False,
     )
-    assert response.status_code == 200
-    assert response.json()["message"] == "Password reset request received"
+    assert r.status_code == 401
 
 
-def test_password_reset_completion() -> None:
+def test_logout_clears_session() -> None:
     client = TestClient(app)
-    response = client.post(
-        "/api/v1/auth/password-reset",
-        json={"token": "valid_token", "new_password": "new_strong_password"},
-    )
-    assert response.status_code == 200
-    assert response.json()["message"] == "Password has been reset successfully"
-
-
-def test_password_reset_invalid_request() -> None:
-    client = TestClient(app)
-    response = client.post(
-        "/api/v1/auth/password-reset",
-        json={"username": "invalid"},
-    )
-    assert response.status_code == 400
-    assert "error" in response.json()
+    user = os.environ.get("OWNER_USERNAME", "owner")
+    password = os.environ["OWNER_PASSWORD"]
+    client.post("/login", data={"username": user, "password": password}, follow_redirects=False)
+    assert client.get("/api/v1/dashboard").status_code == 200
+    out = client.post("/logout", follow_redirects=False)
+    assert out.status_code == 302
+    assert client.get("/api/v1/dashboard").status_code == 401

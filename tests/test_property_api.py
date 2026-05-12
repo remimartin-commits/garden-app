@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+client = auth_test_client()
 
 
 def test_get_property_by_id_returns_service_property() -> None:

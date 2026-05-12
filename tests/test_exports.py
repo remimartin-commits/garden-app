@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
+client = auth_test_client()
 
 
 @pytest.mark.parametrize("endpoint", ["/api/v1/exports/jobs.csv", "/api/v1/exports/invoices.csv"])

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 from fastapi.testclient import TestClient
 
 from app.main import app
 
 
 def test_create_customer_with_property() -> None:
-    client = TestClient(app)
+    client = auth_test_client()
     response = client.post(
         "/api/v1/customers",
         json={

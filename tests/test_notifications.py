@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.http_helpers import auth_test_client
+
 import unittest
 
 from fastapi.testclient import TestClient
@@ -7,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.entities import NotificationLog
 from app.main import app
 
-client = TestClient(app)
+client = auth_test_client()
 
 
 class TestNotificationLog(unittest.TestCase):
