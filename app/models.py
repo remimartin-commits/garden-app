@@ -18,6 +18,7 @@ class Customer(Base):
     billing_details = Column(Text, nullable=True)
     price_agreed_type = Column(String, nullable=True)
     price_agreed_amount = Column(Float, nullable=True)
+    fuel_cost = Column(Float, nullable=False, default=10.0)
     is_archived = Column(Boolean, default=False)
     created_at = Column(DateTime, default=nz_naive_now)
 

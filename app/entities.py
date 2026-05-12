@@ -1300,6 +1300,7 @@ class Customer:
     archived: bool = False
     price_agreed_type: str | None = None
     price_agreed_amount: float | None = None
+    fuel_cost: float = 10.0
 
 
 @dataclass

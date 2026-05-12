@@ -848,11 +848,12 @@
                 <th>Property</th>
                 <th>Tags</th>
                 <th>Agreed pricing</th>
+                <th>Fuel (NZD)</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="customers-tbody">
-              <tr><td colspan="7" class="loading">Loading customers…</td></tr>
+              <tr><td colspan="8" class="loading">Loading customers…</td></tr>
             </tbody>
           </table>
         </div>
@@ -1136,6 +1137,10 @@
         <label>Amount ($)</label>
         <input type="number" id="nc-price-amount" placeholder="Leave blank if not set" step="0.01" min="0">
       </div>
+      <div class="field">
+        <label>Fuel cost ($ per visit)</label>
+        <input type="number" id="nc-fuel-cost" placeholder="Default 10" step="0.01" min="0">
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-new-customer')">Cancel</button>
@@ -1180,6 +1185,10 @@
       <div class="field">
         <label>Amount ($)</label>
         <input type="number" id="ec-price-amount" placeholder="Leave blank if not set" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>Fuel cost ($ per visit)</label>
+        <input type="number" id="ec-fuel-cost" placeholder="10" step="0.01" min="0">
       </div>
     </div>
     <div class="modal-actions">
@@ -2494,7 +2503,7 @@ async function loadCustomers() {
 function renderCustomers(arr) {
   const tbody = document.getElementById('customers-tbody');
   if (!arr.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       <p>No customers yet. Add your first customer!</p></div></td></tr>`;
     return;
@@ -2507,6 +2516,7 @@ function renderCustomers(arr) {
       <td>${esc((c.properties && c.properties[0] && c.properties[0].address) || c.property_address || '—')}</td>
       <td>${(c.tags || []).map(t => `<span class="badge badge-green">${esc(t)}</span>`).join(' ') || '—'}</td>
       <td>${(() => { const lbl = customerPriceAgreedLabel(c); return lbl ? '<strong>' + esc(lbl) + '</strong>' : '—'; })()}</td>
+      <td><strong>$${esc(customerFuelDisplay(c))}</strong></td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="openMapForCustomer(${c.id})">Map</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditCustomer(${c.id})">Edit</button>
@@ -2540,10 +2550,12 @@ async function removeCustomer(id) {
 }
 
 function filterCustomers(q) {
+  const ql = q.toLowerCase();
   const f = _customers.filter(c =>
-    (c.name || '').toLowerCase().includes(q.toLowerCase()) ||
-    (c.email || '').toLowerCase().includes(q.toLowerCase()) ||
-    (customerPriceAgreedLabel(c) || '').toLowerCase().includes(q.toLowerCase())
+    (c.name || '').toLowerCase().includes(ql) ||
+    (c.email || '').toLowerCase().includes(ql) ||
+    (customerPriceAgreedLabel(c) || '').toLowerCase().includes(ql) ||
+    String(customerFuelDisplay(c)).includes(ql)
   );
   renderCustomers(f);
 }
@@ -2572,6 +2584,12 @@ function customerPriceAgreedLabel(c) {
   return '$' + n.toFixed(2) + ' / job';
 }
 
+function customerFuelDisplay(c) {
+  const v = c.fuel_cost;
+  const n = (v != null && v !== '' && !Number.isNaN(Number(v))) ? Number(v) : 10;
+  return n.toFixed(2);
+}
+
 function openEditCustomer(id) {
   const c = _customers.find(x => Number(x.id) === Number(id));
   if (!c) { toast('Customer not found', 'error'); return; }
@@ -2586,6 +2604,8 @@ function openEditCustomer(id) {
   document.getElementById('ec-price-type').value = pt;
   document.getElementById('ec-price-amount').value =
     pa != null && pa !== '' && !Number.isNaN(Number(pa)) ? String(Number(pa)) : '';
+  const fc = (c.fuel_cost != null && !Number.isNaN(Number(c.fuel_cost))) ? Number(c.fuel_cost) : 10;
+  document.getElementById('ec-fuel-cost').value = String(fc);
   _editCustomerSnapshot = {
     name: (c.name || '').trim(),
     email: (c.email || '').trim(),
@@ -2593,7 +2613,8 @@ function openEditCustomer(id) {
     property_address: customerPrimaryAddress(c).trim(),
     tagsKey: customerTagsSortKey(c.tags),
     price_agreed_type: pt,
-    price_agreed_amount: pa != null && pa !== '' && !Number.isNaN(Number(pa)) ? Number(pa) : null
+    price_agreed_amount: pa != null && pa !== '' && !Number.isNaN(Number(pa)) ? Number(pa) : null,
+    fuel_cost: fc,
   };
   openModal('modal-edit-customer');
 }
@@ -2629,6 +2650,10 @@ async function saveEditCustomer() {
     patch.price_agreed_type = pType;
     patch.price_agreed_amount = priceNext;
   }
+  const fuelRaw = document.getElementById('ec-fuel-cost').value.trim();
+  const fuelNext = fuelRaw === '' ? 10 : Number(fuelRaw);
+  if (Number.isNaN(fuelNext) || fuelNext < 0) { toast('Enter a valid fuel cost (0 or more)', 'error'); return; }
+  if (fuelNext !== _editCustomerSnapshot.fuel_cost) patch.fuel_cost = fuelNext;
   if (!Object.keys(patch).length) { toast('No changes to save'); return; }
   try {
     const r = await fetch('/api/v1/customers/' + encodeURIComponent(id), {
@@ -2662,6 +2687,12 @@ async function createCustomer() {
     body.price_agreed_type = pType;
     body.price_agreed_amount = n;
   }
+  const fuelRaw = document.getElementById('nc-fuel-cost').value.trim();
+  if (fuelRaw !== '') {
+    const f = Number(fuelRaw);
+    if (Number.isNaN(f) || f < 0) { toast('Enter a valid fuel cost or leave blank for default ($10)', 'error'); return; }
+    body.fuel_cost = f;
+  }
   const r = await api('/api/v1/customers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2670,7 +2701,7 @@ async function createCustomer() {
   if (r) {
     toast('Customer added');
     closeModal('modal-new-customer');
-    ['nc-name','nc-email','nc-phone','nc-address','nc-price-amount'].forEach(id => document.getElementById(id).value = '');
+    ['nc-name','nc-email','nc-phone','nc-address','nc-price-amount','nc-fuel-cost'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('nc-price-type').value = 'fixed';
     loadCustomers();
     loadDashboard();

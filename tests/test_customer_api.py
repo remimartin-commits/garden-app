@@ -15,6 +15,26 @@ def test_create_customer_without_property() -> None:
     assert data["name"] == "John Doe"
     assert data["email"] == "john@example.com"
     assert data["properties"] == []
+    assert float(data.get("fuel_cost", 0)) == 10.0
+
+
+def test_create_customer_with_custom_fuel_cost() -> None:
+    response = client.post(
+        "/api/v1/customers",
+        json={"name": "Fuelie", "email": "fuelie@example.com", "fuel_cost": 18.5},
+    )
+    assert response.status_code == 200
+    assert response.json()["fuel_cost"] == 18.5
+
+
+def test_patch_customer_fuel_cost() -> None:
+    created = client.post("/api/v1/customers", json={"name": "Van", "email": "van@example.com"})
+    assert created.status_code == 200
+    cid = created.json()["id"]
+    assert float(created.json().get("fuel_cost", 0)) == 10.0
+    r = client.patch(f"/api/v1/customers/{cid}", json={"fuel_cost": 22.0})
+    assert r.status_code == 200
+    assert r.json()["fuel_cost"] == 22.0
 
 
 def test_create_customer_with_property() -> None:
@@ -79,6 +99,7 @@ def test_patch_customer_partial_update_name_only_preserves_other_fields() -> Non
     assert data["name"] == "Robert"
     assert data["email"] == "bob@example.com"
     assert data["phone"] == "555"
+    assert float(data.get("fuel_cost", 0)) == 10.0
 
 
 def test_create_customer_with_hourly_price_agreed() -> None:

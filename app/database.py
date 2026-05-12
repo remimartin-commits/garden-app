@@ -47,6 +47,12 @@ def apply_sqlite_migrations(engine) -> None:
                 conn.execute(text("ALTER TABLE jobs ADD COLUMN estimated_duration_minutes INTEGER"))
             if "hours_worked" not in job_cols:
                 conn.execute(text("ALTER TABLE jobs ADD COLUMN hours_worked FLOAT"))
+    if "customers" in tables:
+        cust_cols = {c["name"] for c in insp.get_columns("customers")}
+        with engine.begin() as conn:
+            if "fuel_cost" not in cust_cols:
+                conn.execute(text("ALTER TABLE customers ADD COLUMN fuel_cost FLOAT DEFAULT 10"))
+                conn.execute(text("UPDATE customers SET fuel_cost = 10 WHERE fuel_cost IS NULL"))
 
 def ensure_demo_invoice_if_empty(db: Session) -> None:
     """Skip demo invoice to avoid foreign key violations."""
@@ -126,6 +132,7 @@ def seed_database_if_empty(db: Session) -> None:
                 notes=None,
                 tags="[]",
                 is_archived=False,
+                fuel_cost=10.0,
             )
         )
     db.flush()

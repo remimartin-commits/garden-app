@@ -5,7 +5,7 @@ import json
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.audit_api import append_audit_log
@@ -16,6 +16,7 @@ from app.models import Customer as CustomerORM
 router = APIRouter(tags=["customers"])
 
 _RETENTION_BLOCK_TAGS = frozenset({"retention_hold", "legal_hold"})
+DEFAULT_FUEL_COST = 10.0
 
 
 class CustomerCreateRequest(BaseModel):
@@ -25,10 +26,11 @@ class CustomerCreateRequest(BaseModel):
     property_address: Optional[str] = None
     price_agreed_type: Optional[Literal["hourly", "fixed"]] = None
     price_agreed_amount: Optional[float] = None
+    fuel_cost: Optional[float] = Field(default=None, ge=0)
 
 
 class CustomerPatchRequest(BaseModel):
-    """Partial update for contact, billing, notes, tags, primary property address, or agreed pricing."""
+    """Partial update for contact, billing, notes, tags, primary property address, agreed pricing, or fuel cost."""
 
     name: Optional[str] = None
     email: Optional[str] = None
@@ -40,6 +42,7 @@ class CustomerPatchRequest(BaseModel):
     tags: Optional[list[str]] = None
     price_agreed_type: Optional[Literal["hourly", "fixed"]] = None
     price_agreed_amount: Optional[float] = None
+    fuel_cost: Optional[float] = Field(default=None, ge=0)
 
 
 class ArchiveSuccessResponse(BaseModel):
@@ -85,6 +88,7 @@ def _row_to_customer(row: CustomerORM) -> Customer:
         archived=bool(row.is_archived),
         price_agreed_type=row.price_agreed_type,
         price_agreed_amount=row.price_agreed_amount,
+        fuel_cost=float(row.fuel_cost) if getattr(row, "fuel_cost", None) is not None else DEFAULT_FUEL_COST,
     )
 
 
@@ -108,6 +112,9 @@ def _create_customer_row(db: Session, request: CustomerCreateRequest) -> Custome
         pamt = float(request.price_agreed_amount)
         raw_t = request.price_agreed_type or "fixed"
         ptype = raw_t if raw_t in ("hourly", "fixed") else "fixed"
+    fuel = DEFAULT_FUEL_COST
+    if request.fuel_cost is not None:
+        fuel = float(request.fuel_cost)
     row = CustomerORM(
         name=request.name,
         email=request.email,
@@ -119,6 +126,7 @@ def _create_customer_row(db: Session, request: CustomerCreateRequest) -> Custome
         billing_details=None,
         price_agreed_type=ptype,
         price_agreed_amount=pamt,
+        fuel_cost=fuel,
         is_archived=False,
     )
     db.add(row)
