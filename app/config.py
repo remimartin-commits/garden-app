@@ -225,3 +225,23 @@ SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").lower()
 def auth_gate_enabled() -> bool:
     """When false (empty owner password), login middleware is skipped for local dev."""
     return bool((OWNER_PASSWORD or "").strip())
+
+
+S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL", "").strip()
+S3_ACCESS_KEY_ID = os.environ.get("S3_ACCESS_KEY_ID", "").strip()
+S3_SECRET_ACCESS_KEY = os.environ.get("S3_SECRET_ACCESS_KEY", "").strip()
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "").strip()
+S3_REGION = (os.environ.get("S3_REGION") or "eu-central-1").strip()
+S3_JOBS_PREFIX = (os.environ.get("S3_JOBS_PREFIX") or "job-attachments").strip().strip("/") or "job-attachments"
+S3_PUBLIC_BASE_URL = os.environ.get("S3_PUBLIC_BASE_URL", "").strip().rstrip("/")
+
+
+def s3_job_attachments_configured() -> bool:
+    """True when Hetzner Object Storage (S3 API) env vars are present for photo uploads."""
+    return bool(
+        S3_ENDPOINT_URL
+        and S3_ACCESS_KEY_ID
+        and S3_SECRET_ACCESS_KEY
+        and S3_BUCKET_NAME
+        and S3_PUBLIC_BASE_URL
+    )

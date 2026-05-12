@@ -44,6 +44,7 @@ def test_list_recurring_job_rules_includes_sample() -> None:
     assert sample["cadence"] == "weekly"
     assert sample.get("property_id") == 201
     assert sample.get("property_address") == "14 Marine Parade, Mt Maunganui"
+    assert sample.get("attachments") == []
     assert "extra_costs" in sample
     assert sample["extra_costs"] == []
     assert sample.get("instances_worked") == 0

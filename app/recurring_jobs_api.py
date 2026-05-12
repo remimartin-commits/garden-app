@@ -5,9 +5,11 @@ from datetime import datetime, timedelta
 from typing import Any, Literal, Optional
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 
+from app import config
+from app.attachment_utils import coerce_attachments_list
 from app.extra_costs import normalize_extra_costs_lines
 from app.property_api import _get_active_property
 
@@ -29,6 +31,7 @@ _RULES: dict[int, dict[str, Any]] = {
         "day_of_month": 1,
         "extra_costs": [],
         "instances_worked": 0,
+        "attachments": [],
     },
 }
 _NEXT_RULE_ID = 2
@@ -101,6 +104,7 @@ def _rule_to_response(rule: dict[str, Any]) -> dict[str, Any]:
         "extra_costs": normalize_extra_costs_lines(rule.get("extra_costs", [])),
         "instances_worked": _norm_instances_worked(rule.get("instances_worked")),
         "hours_per_instance": _hours_per_instance_out(rule),
+        "attachments": coerce_attachments_list(rule.get("attachments")),
     }
 
 
@@ -206,6 +210,7 @@ class RecurringJobRulePatchBody(BaseModel):
     extra_costs: Optional[list[Any]] = None
     instances_worked: Optional[int] = Field(default=None, ge=0)
     hours_per_instance: Optional[float] = Field(default=None, gt=0)
+    attachments: Optional[list[Any]] = None
 
 
 @router.get("/api/v1/recurring-job-rules")
@@ -237,6 +242,7 @@ def create_recurring_job_rule(body: RecurringJobRuleCreateBody) -> dict[str, str
         "instances_worked": _norm_instances_worked(
             body.instances_worked if body.instances_worked is not None else 0
         ),
+        "attachments": [],
     }
     hpi = _norm_hours_per_instance_in(body.hours_per_instance)
     if hpi is not None:
@@ -284,6 +290,8 @@ def patch_recurring_job_rule(rule_id: int, body: RecurringJobRulePatchBody) -> d
                 rule.pop("hours_per_instance", None)
             else:
                 rule["hours_per_instance"] = hpi
+    if "attachments" in data and data["attachments"] is not None:
+        rule["attachments"] = coerce_attachments_list(data["attachments"])
     _RULES[rule_id] = rule
     return _rule_to_response(rule)
 
@@ -295,6 +303,40 @@ def delete_recurring_job_rule(rule_id: int) -> None:
     if rule_id not in _RULES:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recurring job rule not found")
     del _RULES[rule_id]
+
+
+@router.post("/api/v1/recurring-job-rules/{rule_id}/attachments")
+async def post_recurring_rule_attachment(
+    rule_id: int,
+    file: UploadFile = File(...),
+) -> dict[str, str]:
+    if not config.s3_job_attachments_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Photo storage is not configured. Set S3_ENDPOINT_URL, S3_ACCESS_KEY_ID, "
+            "S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME, and S3_PUBLIC_BASE_URL.",
+        )
+    rule = _rule_or_404(rule_id)
+    body = await file.read()
+    try:
+        from app.s3_uploads import upload_job_image
+
+        item = upload_job_image(
+            scope="recurring",
+            scope_id=rule_id,
+            original_filename=file.filename or "photo.jpg",
+            content_type=file.content_type,
+            body=body,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
+    atts = coerce_attachments_list(rule.get("attachments"))
+    atts.append(item)
+    rule["attachments"] = atts
+    _RULES[rule_id] = rule
+    return item
 
 
 @router.post(

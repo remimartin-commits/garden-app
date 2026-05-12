@@ -7,12 +7,14 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Body, Depends, File, Header, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
+from app import config
 from app.audit_api import append_audit_log
+from app.attachment_utils import coerce_attachments_list
 from app.database import get_db
 from app.entities import NotificationLog
 from app.job_management import complete_job
@@ -76,6 +78,8 @@ def _job_dict_from_row(job: JobORM) -> dict[str, Any]:
         raw_lines = merged.get("job_costs") if isinstance(merged.get("job_costs"), list) else []
     merged["extra_costs"] = normalize_extra_costs_lines(raw_lines)
     merged.pop("job_costs", None)
+    att = merged.get("attachments")
+    merged["attachments"] = coerce_attachments_list(att)
     return merged
 
 
@@ -249,6 +253,47 @@ def get_job(job_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
     return _job_dict_from_row(row)
 
 
+@router.post("/api/v1/jobs/{job_id}/attachments")
+async def post_job_attachment(
+    job_id: int,
+    db: Session = Depends(get_db),
+    file: UploadFile = File(...),
+) -> dict[str, str]:
+    """Upload one image to object storage and append it to the job ``attachments`` list."""
+    if not config.s3_job_attachments_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Photo storage is not configured. Set S3_ENDPOINT_URL, S3_ACCESS_KEY_ID, "
+            "S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME, and S3_PUBLIC_BASE_URL.",
+        )
+    row = db.get(JobORM, job_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    body = await file.read()
+    try:
+        from app.s3_uploads import upload_job_image
+
+        item = upload_job_image(
+            scope="job",
+            scope_id=job_id,
+            original_filename=file.filename or "photo.jpg",
+            content_type=file.content_type,
+            body=body,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
+    detail = _job_dict_from_row(row)
+    att = coerce_attachments_list(detail.get("attachments"))
+    att.append(item)
+    detail["attachments"] = att
+    _persist_job_dict(db, job_id, detail)
+    db.commit()
+    db.refresh(row)
+    return item
+
+
 @router.patch("/api/v1/jobs/{job_id}")
 def patch_job(
     job_id: int,
@@ -291,6 +336,8 @@ def patch_job(
         after["extra_costs"] = normalize_extra_costs_lines(body.get("extra_costs"))
     elif "job_costs" in body:
         after["extra_costs"] = normalize_extra_costs_lines(body.get("job_costs"))
+    if "attachments" in body:
+        after["attachments"] = coerce_attachments_list(body.get("attachments"))
     after.pop("job_costs", None)
     _refresh_job_detail_contact(db, after)
     _persist_job_dict(db, job_id, after)

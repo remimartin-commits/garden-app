@@ -1,5 +1,8 @@
 import os
 
+# Session cookies must not be Secure-only during tests (Starlette TestClient uses http://testserver).
+os.environ.setdefault("GARDEN_FORCE_SESSION_INSECURE", "1")
+
 import pytest
 from fastapi.testclient import TestClient
 

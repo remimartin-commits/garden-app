@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from contextlib import asynccontextmanager
 
@@ -95,13 +96,17 @@ app.include_router(reporting_router)
 app.include_router(plant_exchange_router)
 
 app.add_middleware(AuthGateMiddleware)
+# Starlette TestClient uses http:// — Secure session cookies are dropped unless disabled.
+_session_https_only = bool(config.SESSION_COOKIE_SECURE) and not os.environ.get(
+    "GARDEN_FORCE_SESSION_INSECURE"
+)
 app.add_middleware(
     SessionMiddleware,
     secret_key=config.SECRET_KEY,
     session_cookie="session",
     max_age=14 * 24 * 60 * 60,
     same_site="lax",
-    https_only=config.SESSION_COOKIE_SECURE,
+    https_only=_session_https_only,
 )
 
 Base.metadata.create_all(bind=engine)

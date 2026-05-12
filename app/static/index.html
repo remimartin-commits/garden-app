@@ -602,6 +602,14 @@
 
       table { font-size: 0.82rem; }
       thead th, tbody td { padding: 0.5rem 0.45rem; }
+      .job-spec-link {
+        background: none; border: none; padding: 0; margin: 0; font: inherit; color: var(--green-800);
+        cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; max-width: 100%;
+      }
+      .job-spec-link:hover { color: var(--green-900); }
+      .jd-photo-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .jd-photo-tile { width: 7.5rem; }
+      .jd-photo-tile img { width: 7.5rem; height: 7.5rem; object-fit: cover; border-radius: 0.35rem; border: 1px solid var(--border); }
 
       .cal-toolbar .cal-label { min-width: 0; flex: 1; }
 
@@ -1114,6 +1122,42 @@
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-edit-job')">Cancel</button>
       <button class="btn btn-primary" onclick="saveJobEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Job detail (specs + photos) -->
+<div class="modal-backdrop" id="modal-job-detail">
+  <div class="modal modal--wide">
+    <div class="modal-title" id="jd-detail-title">Job</div>
+    <p id="jd-storage-hint" style="display:none;font-size:.8rem;color:#6b4a00;margin:-.35rem 0 .75rem;padding:.5rem .65rem;background:#fff8e6;border-radius:.35rem;border:1px solid var(--border)">Photo uploads need object storage env vars (see server docs).</p>
+    <div id="jd-detail-body" style="font-size:.9rem;line-height:1.5"></div>
+    <div class="field" style="margin-top:1rem">
+      <label>Add photos</label>
+      <input type="file" id="jd-photo-input" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
+      <button type="button" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadJobDetailPhotos()">Upload to storage</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeJobDetailModal()">Close</button>
+      <button type="button" class="btn btn-primary" onclick="openEditJobFromJobDetail()">Edit job</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recurring schedule detail (specs + photos) -->
+<div class="modal-backdrop" id="modal-recurring-detail">
+  <div class="modal modal--wide">
+    <div class="modal-title" id="rd-detail-title">Recurring schedule</div>
+    <p id="rd-storage-hint" style="display:none;font-size:.8rem;color:#6b4a00;margin:-.35rem 0 .75rem;padding:.5rem .65rem;background:#fff8e6;border-radius:.35rem;border:1px solid var(--border)">Photo uploads need object storage env vars (see server docs).</p>
+    <div id="rd-detail-body" style="font-size:.9rem;line-height:1.5"></div>
+    <div class="field" style="margin-top:1rem">
+      <label>Add photos</label>
+      <input type="file" id="rd-photo-input" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
+      <button type="button" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadRecurringDetailPhotos()">Upload to storage</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeRecurringDetailModal()">Close</button>
+      <button type="button" class="btn btn-primary" onclick="openRecurringModalFromDetail()">Edit schedule</button>
     </div>
   </div>
 </div>
@@ -2132,7 +2176,7 @@ function dashCalOpenDay(dateKey) {
     list.innerHTML = dayJobs.map(j => `
       <li style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
-          <div class="ql-name">${esc(j.description || 'Job #' + j.job_id)}</div>
+          <div class="ql-name"><button type="button" class="job-spec-link" onclick="closeModal('modal-dash-day');openJobDetail(${j.job_id})">${esc(j.description || 'Job #' + j.job_id)}</button></div>
           <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}${formatJobWhen(j) !== '—' ? ' · ' + esc(formatJobWhen(j)) : ''}${esc(formatJobTimeExtras(j))}${(j.assignee && String(j.assignee).trim()) ? ' · Who: ' + esc(String(j.assignee).trim()) : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
@@ -2273,7 +2317,7 @@ async function loadDashboard() {
     jobsList.innerHTML = jobArr.slice(0, 5).map(j => `
       <li style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
-          <div class="ql-name">${esc(j.description || 'Job #' + j.job_id)}</div>
+          <div class="ql-name"><button type="button" class="job-spec-link" onclick="openJobDetail(${j.job_id})">${esc(j.description || 'Job #' + j.job_id)}</button></div>
           <div class="ql-sub">${esc(j.customer?.name || 'Unknown customer')}${formatJobWhen(j) !== '—' ? ' · ' + esc(formatJobWhen(j)) : ''}${esc(formatJobTimeExtras(j))}${(j.assignee && String(j.assignee).trim()) ? ' · Who: ' + esc(String(j.assignee).trim()) : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
@@ -2326,10 +2370,269 @@ async function loadWorkPage() {
   await loadRecurringRules();
   setJobsTab(_jobsActiveTab);
   populateCustomerDropdowns();
+  tryOpenJobOrRecurringHash();
 }
 
 async function loadJobs() {
   await loadWorkPage();
+}
+
+let _jdJobId = null;
+let _rdRuleId = null;
+
+function tryOpenJobOrRecurringHash() {
+  const h = location.hash || '';
+  let m = /^#job-(\d+)$/.exec(h);
+  if (m) {
+    openJobDetail(Number(m[1]), { setHash: false });
+    return;
+  }
+  m = /^#recurring-(\d+)$/.exec(h);
+  if (m) {
+    openRecurringDetail(Number(m[1]), { setHash: false });
+  }
+}
+
+function jobDetailPhotosHtml(j) {
+  const att = Array.isArray(j.attachments) ? j.attachments : [];
+  if (!att.length) return '<p style="color:var(--muted);margin:.25rem 0">No photos yet.</p>';
+  return '<div class="jd-photo-grid">' + att.map(function (a, i) {
+    const u = esc(String(a.file_url || ''));
+    const fn = esc(String(a.filename || 'photo'));
+    return '<div class="jd-photo-tile"><a href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt=""></a>' +
+      '<button type="button" class="btn btn-outline btn-sm" style="margin-top:.25rem;width:100%" onclick="removeJobAttachment(' + Number(j.job_id) + ',' + i + ')">Remove</button></div>';
+  }).join('') + '</div>';
+}
+
+function jobDetailSpecHtml(j) {
+  const rows = [
+    ['Customer', esc(j.customer?.name || '—')],
+    ['Property', esc(j.property?.address || j.property_info?.address || '—')],
+    ['When', esc(formatJobWhen(j)) + esc(formatJobTimeExtras(j))],
+    ['Status', String(j.workflow_status || '—')],
+    ['Who\'s job', j.assignee && String(j.assignee).trim() ? esc(String(j.assignee).trim()) : '—'],
+    ['Est. minutes', j.estimated_duration_minutes != null && j.estimated_duration_minutes !== '' ? esc(String(j.estimated_duration_minutes)) : '—'],
+    ['Hours worked', j.hours_worked != null && j.hours_worked !== '' ? esc(String(j.hours_worked)) : '—'],
+  ];
+  const tbl = '<table style="width:100%;border-collapse:collapse;margin:.35rem 0 .75rem"><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td style="padding:.2rem .5rem .2rem 0;color:var(--muted);white-space:nowrap;vertical-align:top">' + r[0] + '</td><td style="padding:.2rem 0">' + r[1] + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  const desc = '<div style="margin:.5rem 0"><strong>Description</strong><p style="margin:.35rem 0 0;white-space:pre-wrap">' + esc(j.description || '—') + '</p></div>';
+  const ecRows = getJobExtraCostsArr(j);
+  let extras = '<p style="color:var(--muted);margin:.25rem 0">No extra cost lines.</p>';
+  if (ecRows.length) {
+    extras = '<table style="width:100%;border-collapse:collapse;font-size:.86rem"><thead><tr><th align="left">Extra</th><th align="right">$</th></tr></thead><tbody>' +
+      ecRows.map(function (r) {
+        return '<tr><td style="padding:.2rem .4rem .2rem 0">' + esc(r.label || r.category || '') + '</td><td style="padding:.2rem 0;text-align:right;font-variant-numeric:tabular-nums">' + esc(moneyStr(Number(r.amount) || 0)) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+  return tbl + desc + '<div style="margin:.75rem 0 .35rem"><strong>Photos</strong></div>' + jobDetailPhotosHtml(j) + '<div style="margin-top:.75rem"><strong>Extra costs</strong></div>' + extras;
+}
+
+async function openJobDetail(jobId, opts) {
+  opts = opts || {};
+  _jdJobId = Number(jobId);
+  if (Number.isNaN(_jdJobId)) return;
+  if (opts.setHash !== false) {
+    try { history.replaceState(null, '', '#job-' + _jdJobId); } catch (e) { /* ignore */ }
+  }
+  const j = await api('/api/v1/jobs/' + encodeURIComponent(_jdJobId));
+  if (!j) {
+    toast('Could not load job', 'error');
+    return;
+  }
+  document.getElementById('jd-detail-title').textContent = 'Job #' + _jdJobId;
+  document.getElementById('jd-detail-body').innerHTML = jobDetailSpecHtml(j);
+  const hint = document.getElementById('jd-storage-hint');
+  if (hint) hint.style.display = 'none';
+  openModal('modal-job-detail');
+}
+
+function closeJobDetailModal() {
+  closeModal('modal-job-detail');
+  try {
+    if ((location.hash || '').startsWith('#job-')) history.replaceState(null, '', location.pathname + location.search);
+  } catch (e) { /* ignore */ }
+}
+
+function openEditJobFromJobDetail() {
+  const id = _jdJobId;
+  closeModal('modal-job-detail');
+  if (id != null && !Number.isNaN(id)) openEditJob(id);
+}
+
+async function removeJobAttachment(jobId, idx) {
+  if (!confirm('Remove this photo from the job?')) return;
+  try {
+    const r = await fetch('/api/v1/jobs/' + encodeURIComponent(jobId));
+    if (!r.ok) throw new Error(await r.text());
+    const j = await r.json();
+    const atts = Array.isArray(j.attachments) ? j.attachments.slice() : [];
+    atts.splice(idx, 1);
+    const pr = await fetch('/api/v1/jobs/' + encodeURIComponent(jobId), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attachments: atts }),
+    });
+    if (!pr.ok) throw new Error(await pr.text());
+    const ix = _jobs.findIndex(function (x) { return Number(x.job_id) === Number(jobId); });
+    if (ix >= 0) _jobs[ix] = await pr.json();
+    toast('Photo removed');
+    openJobDetail(jobId, { setHash: false });
+  } catch (e) {
+    toast('Could not remove photo', 'error');
+  }
+}
+
+async function uploadJobDetailPhotos() {
+  const inp = document.getElementById('jd-photo-input');
+  if (_jdJobId == null || Number.isNaN(_jdJobId) || !inp || !inp.files || !inp.files.length) {
+    toast('Choose one or more images', 'error');
+    return;
+  }
+  const hint = document.getElementById('jd-storage-hint');
+  for (let i = 0; i < inp.files.length; i++) {
+    const fd = new FormData();
+    fd.append('file', inp.files[i]);
+    const r = await fetch('/api/v1/jobs/' + encodeURIComponent(_jdJobId) + '/attachments', { method: 'POST', body: fd });
+    if (!r.ok) {
+      let msg = await r.text();
+      try {
+        const o = JSON.parse(msg);
+        msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
+      } catch (e2) { /* keep */ }
+      if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
+      toast(msg || 'Upload failed', 'error');
+      return;
+    }
+    const ix = _jobs.findIndex(function (x) { return Number(x.job_id) === Number(_jdJobId); });
+    if (ix >= 0) {
+      try {
+        const jr = await fetch('/api/v1/jobs/' + encodeURIComponent(_jdJobId));
+        if (jr.ok) _jobs[ix] = await jr.json();
+      } catch (e3) { /* ignore */ }
+    }
+  }
+  inp.value = '';
+  toast('Photos uploaded');
+  openJobDetail(_jdJobId, { setHash: false });
+}
+
+function recurringDetailHtml(r) {
+  const cust = resolveCustomerForJob(r);
+  const rows = [
+    ['Cadence', (r.cadence || 'weekly') === 'monthly' ? 'Monthly' : 'Weekly'],
+    ['Start', esc(r.start_date || '—')],
+    ['Repeat', esc(recurringRepeatLabel(r))],
+    ['Property', recurringPropertyCell(r)],
+    ['Customer', esc(recurringCustomerName(r.customer_id))],
+    ['Instances worked', esc(formatRecurringInstancesCell(r))],
+    ['Notes', esc(r.notes || '—')],
+  ];
+  const tbl = '<table style="width:100%;border-collapse:collapse;margin:.35rem 0 .75rem"><tbody>' +
+    rows.map(function (x) {
+      return '<tr><td style="padding:.2rem .5rem .2rem 0;color:var(--muted);white-space:nowrap;vertical-align:top">' + x[0] + '</td><td style="padding:.2rem 0">' + x[1] + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  const sum = computeRecurringRuleCostSummary(r, cust);
+  const cost = '<div style="margin:.5rem 0;padding:.5rem .65rem;border:1px solid var(--border);border-radius:.4rem;background:var(--green-50)"><strong>Cost summary</strong><div style="margin-top:.35rem;font-variant-numeric:tabular-nums">Total ' + esc(moneyStr(sum.total)) + '</div></div>';
+  const att = Array.isArray(r.attachments) ? r.attachments : [];
+  let photos = '<p style="color:var(--muted);margin:.25rem 0">No photos yet.</p>';
+  if (att.length) {
+    photos = '<div class="jd-photo-grid">' + att.map(function (a, i) {
+      const u = esc(String(a.file_url || ''));
+      return '<div class="jd-photo-tile"><a href="' + u + '" target="_blank" rel="noopener"><img src="' + u + '" alt=""></a>' +
+        '<button type="button" class="btn btn-outline btn-sm" style="margin-top:.25rem;width:100%" onclick="removeRecurringAttachment(' + Number(r.id) + ',' + i + ')">Remove</button></div>';
+    }).join('') + '</div>';
+  }
+  return tbl + cost + '<div style="margin:.75rem 0 .35rem"><strong>Photos</strong></div>' + photos;
+}
+
+async function openRecurringDetail(ruleId, opts) {
+  opts = opts || {};
+  _rdRuleId = Number(ruleId);
+  if (Number.isNaN(_rdRuleId)) return;
+  if (opts.setHash !== false) {
+    try { history.replaceState(null, '', '#recurring-' + _rdRuleId); } catch (e) { /* ignore */ }
+  }
+  let r = null;
+  try {
+    const res = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(_rdRuleId));
+    if (res.ok) r = await res.json();
+  } catch (e) { /* ignore */ }
+  if (!r) r = _recurringRules.find(function (x) { return Number(x.id) === _rdRuleId; });
+  if (!r) {
+    toast('Could not load schedule', 'error');
+    return;
+  }
+  document.getElementById('rd-detail-title').textContent = 'Recurring · ' + (r.description || 'Schedule');
+  document.getElementById('rd-detail-body').innerHTML = recurringDetailHtml(r);
+  const hint = document.getElementById('rd-storage-hint');
+  if (hint) hint.style.display = 'none';
+  openModal('modal-recurring-detail');
+}
+
+function closeRecurringDetailModal() {
+  closeModal('modal-recurring-detail');
+  try {
+    if ((location.hash || '').startsWith('#recurring-')) history.replaceState(null, '', location.pathname + location.search);
+  } catch (e) { /* ignore */ }
+}
+
+function openRecurringModalFromDetail() {
+  const id = _rdRuleId;
+  closeModal('modal-recurring-detail');
+  if (id != null && !Number.isNaN(id)) openRecurringModal(id);
+}
+
+async function removeRecurringAttachment(ruleId, idx) {
+  if (!confirm('Remove this photo?')) return;
+  try {
+    const res = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(ruleId));
+    if (!res.ok) throw new Error(await res.text());
+    const r = await res.json();
+    const atts = Array.isArray(r.attachments) ? r.attachments.slice() : [];
+    atts.splice(idx, 1);
+    const pr = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(ruleId), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attachments: atts }),
+    });
+    if (!pr.ok) throw new Error(await pr.text());
+    await loadRecurringRules();
+    toast('Photo removed');
+    openRecurringDetail(ruleId, { setHash: false });
+  } catch (e) {
+    toast('Could not remove photo', 'error');
+  }
+}
+
+async function uploadRecurringDetailPhotos() {
+  const inp = document.getElementById('rd-photo-input');
+  if (_rdRuleId == null || Number.isNaN(_rdRuleId) || !inp || !inp.files || !inp.files.length) {
+    toast('Choose one or more images', 'error');
+    return;
+  }
+  const hint = document.getElementById('rd-storage-hint');
+  for (let i = 0; i < inp.files.length; i++) {
+    const fd = new FormData();
+    fd.append('file', inp.files[i]);
+    const r = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(_rdRuleId) + '/attachments', { method: 'POST', body: fd });
+    if (!r.ok) {
+      let msg = await r.text();
+      try {
+        const o = JSON.parse(msg);
+        msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
+      } catch (e2) { /* keep */ }
+      if (hint && r.status === 503) hint.style.display = '';
+      toast(msg || 'Upload failed', 'error');
+      return;
+    }
+  }
+  inp.value = '';
+  await loadRecurringRules();
+  toast('Photos uploaded');
+  openRecurringDetail(_rdRuleId, { setHash: false });
 }
 
 function renderJobs(arr) {
@@ -2340,14 +2643,22 @@ function renderJobs(arr) {
       <p>No jobs found</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = arr.map(j => `
-    <tr>
-      <td><strong>#${j.job_id}</strong></td>
+  tbody.innerHTML = arr.map(j => {
+    const jid = j.job_id != null ? Number(j.job_id) : null;
+    const descShort = esc((j.description || '').slice(0, 60));
+    const descCell = (jid != null && !Number.isNaN(jid))
+      ? `<button type="button" class="job-spec-link" onclick="event.stopPropagation();openJobDetail(${jid})">${descShort || '—'}</button>`
+      : descShort || '—';
+    const idCell = (jid != null && !Number.isNaN(jid))
+      ? `<button type="button" class="job-spec-link" onclick="event.stopPropagation();openJobDetail(${jid})"><strong>#${jid}</strong></button>`
+      : `<strong>#${esc(String(j.job_id))}</strong>`;
+    return `<tr>
+      <td>${idCell}</td>
       <td style="white-space:nowrap;font-size:.86rem">${esc(formatJobWhen(j))}${esc(formatJobTimeExtras(j))}</td>
       <td>${esc(j.customer?.name || '—')}</td>
       <td>${j.assignee && String(j.assignee).trim() ? esc(String(j.assignee).trim()) : '—'}</td>
       <td>${esc(j.property?.address || j.property_info?.address || '—')}</td>
-      <td>${esc((j.description || '').slice(0, 60))}</td>
+      <td>${descCell}</td>
       <td>${formatJobStatusColumnHtml(j)}</td>
       <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${formatJobsTableExtraCostsCell(j)}</td>
       <td style="white-space:nowrap">
@@ -2355,7 +2666,8 @@ function renderJobs(arr) {
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditJob(${j.job_id})">Edit</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${j.job_id})">Remove</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function updateJobsDayFilterBanner() {
@@ -3233,9 +3545,14 @@ function renderWeekFromSchedule(data) {
     const jid = s.job_id != null ? Number(s.job_id) : null;
     const whoDisp = (s.assignee && String(s.assignee).trim()) ? esc(String(s.assignee).trim()) : '—';
     const timeExtra = esc(formatJobTimeExtras(s));
+    const jobLabelRaw = s.job_description || s.description || (s.job_id != null ? 'Job #' + s.job_id : '—');
+    const jobLabelEsc = esc(jobLabelRaw);
+    const jobCell = (jid != null && !Number.isNaN(jid))
+      ? `<button type="button" class="job-spec-link" onclick="event.stopPropagation();openJobDetail(${jid})">${jobLabelEsc}</button>`
+      : jobLabelEsc;
     return `<tr>
       <td style="white-space:nowrap">${label}${timeExtra ? '<br><span style="font-size:.72rem;color:var(--muted);font-weight:600">' + timeExtra + '</span>' : ''}</td>
-      <td>${esc(s.job_description || s.description || (s.job_id != null ? 'Job #' + s.job_id : '—'))}</td>
+      <td>${jobCell}</td>
       <td>${esc(s.customer_name || s.customer?.name || '—')}</td>
       <td>${whoDisp}</td>
       <td>${formatJobStatusColumnHtml(jobLikeFromScheduleSlot(s))}</td>
@@ -3443,8 +3760,9 @@ function renderRecurringRulesTable() {
   tbody.innerHTML = _recurringRules.map(r => {
     const paused = !!r.paused;
     const cad = (r.cadence || 'weekly') === 'monthly' ? 'Monthly' : 'Weekly';
+    const descCell = `<button type="button" class="job-spec-link" onclick="event.stopPropagation();openRecurringDetail(${r.id})">${esc(r.description || '—')}</button>`;
     return `<tr>
-      <td><strong>${esc(r.description || '—')}</strong></td>
+      <td>${descCell}</td>
       <td>${esc(cad)}</td>
       <td>${esc(r.start_date || '—')}</td>
       <td>${esc(recurringRepeatLabel(r))}</td>
