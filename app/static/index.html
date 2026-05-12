@@ -790,11 +790,12 @@
                   <th>Property</th>
                   <th>Description</th>
                   <th>Status</th>
+                  <th>Costs</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody id="jobs-tbody">
-                <tr><td colspan="8" class="loading">Loading jobs…</td></tr>
+                <tr><td colspan="9" class="loading">Loading jobs…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1083,6 +1084,21 @@
       <div class="field" style="grid-column:1/-1">
         <label>Description</label>
         <textarea id="ej-description" placeholder="Describe the job…"></textarea>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Costs</label>
+        <p style="font-size:.78rem;color:var(--muted);margin:0 0 .5rem">Line items with a category (pick a preset or type your own), description, and amount.</p>
+        <datalist id="ej-cost-cat-presets">
+          <option value="materials"></option>
+          <option value="fuel"></option>
+          <option value="labor"></option>
+          <option value="equipment"></option>
+          <option value="travel"></option>
+          <option value="other"></option>
+          <option value="custom"></option>
+        </datalist>
+        <div id="ej-costs-rows"></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addEjCostRow()" style="margin-top:.35rem">Add cost line</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -2259,7 +2275,7 @@ async function loadJobs() {
 function renderJobs(arr) {
   const tbody = document.getElementById('jobs-tbody');
   if (!arr.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
       <p>No jobs found</p></div></td></tr>`;
     return;
@@ -2273,6 +2289,7 @@ function renderJobs(arr) {
       <td>${esc(j.property?.address || j.property_info?.address || '—')}</td>
       <td>${esc((j.description || '').slice(0, 60))}</td>
       <td>${statusBadge(j.workflow_status)}</td>
+      <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${formatJobCostsSummary(j)}</td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="openMapForJob(${j.job_id})">Map</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditJob(${j.job_id})">Edit</button>
@@ -2317,7 +2334,8 @@ function renderJobsList() {
       String(formatJobWhen(j)).toLowerCase().includes(ql) ||
       String(formatJobTimeExtras(j)).toLowerCase().includes(ql) ||
       String(j.estimated_duration_minutes != null ? j.estimated_duration_minutes : '').includes(ql) ||
-      String(j.hours_worked != null ? j.hours_worked : '').includes(ql)
+      String(j.hours_worked != null ? j.hours_worked : '').includes(ql) ||
+      String(jobCostsSearchText(j)).toLowerCase().includes(ql)
     );
   }
   renderJobs(list);
@@ -2325,6 +2343,98 @@ function renderJobsList() {
 
 function filterJobs(_q) {
   renderJobsList();
+}
+
+function formatJobCostsSummary(j) {
+  const rows = Array.isArray(j.job_costs) ? j.job_costs : [];
+  if (!rows.length) return '—';
+  const t = rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  return '$' + t.toFixed(2);
+}
+
+function jobCostsSearchText(j) {
+  const rows = Array.isArray(j.job_costs) ? j.job_costs : [];
+  return rows.map(r => [r.category, r.label, r.amount].filter(x => x != null && x !== '').join(' ')).join(' ');
+}
+
+function ejCostRowHtml(row) {
+  const r = row || {};
+  const cat = r.category != null ? String(r.category) : 'materials';
+  const lab = r.label != null ? String(r.label) : '';
+  const amt = r.amount != null && r.amount !== '' ? String(r.amount) : '';
+  return `<div class="ej-cost-row" style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:flex-end;margin-bottom:.5rem">
+    <div class="field" style="margin:0;min-width:7.5rem;flex:0 1 8rem">
+      <label style="font-size:.75rem;color:var(--muted)">Category</label>
+      <input type="text" class="ej-cost-cat" list="ej-cost-cat-presets" autocomplete="off" value="${esc(cat)}" placeholder="materials">
+    </div>
+    <div class="field" style="margin:0;flex:1;min-width:10rem">
+      <label style="font-size:.75rem;color:var(--muted)">Item</label>
+      <input type="text" class="ej-cost-label" placeholder="Material, line item, notes…" value="${esc(lab)}">
+    </div>
+    <div class="field" style="margin:0;display:flex;align-items:flex-end;gap:.35rem;flex:0 0 auto">
+      <span style="padding-bottom:.45rem;font-weight:600;color:var(--muted)">$</span>
+      <div style="margin:0;width:5.5rem">
+        <label style="font-size:.75rem;color:var(--muted)">Amount</label>
+        <input type="number" class="ej-cost-amt" min="0" step="0.01" placeholder="0.00" value="${esc(amt)}">
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="removeEjCostRow(this)" style="align-self:flex-end">Remove</button>
+  </div>`;
+}
+
+function addEjCostRow(row) {
+  const wrap = document.getElementById('ej-costs-rows');
+  if (!wrap) return;
+  const r = row === undefined || row === null
+    ? { category: 'materials', label: 'Material', amount: '' }
+    : row;
+  wrap.insertAdjacentHTML('beforeend', ejCostRowHtml(r));
+}
+
+function removeEjCostRow(btn) {
+  const row = btn && btn.closest && btn.closest('.ej-cost-row');
+  const wrap = document.getElementById('ej-costs-rows');
+  if (!row || !wrap) return;
+  row.remove();
+  if (!wrap.querySelector('.ej-cost-row')) {
+    addEjCostRow({ category: 'materials', label: 'Material', amount: '' });
+  }
+}
+
+function renderEjCostRows(job) {
+  const wrap = document.getElementById('ej-costs-rows');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const rows = Array.isArray(job.job_costs) ? job.job_costs : [];
+  if (!rows.length) {
+    addEjCostRow({ category: 'materials', label: 'Material', amount: '' });
+  } else {
+    rows.forEach(r => addEjCostRow(r));
+  }
+}
+
+function collectEjCostRows() {
+  const wrap = document.getElementById('ej-costs-rows');
+  if (!wrap) return [];
+  const out = [];
+  wrap.querySelectorAll('.ej-cost-row').forEach(row => {
+    const catRaw = row.querySelector('.ej-cost-cat');
+    const labRaw = row.querySelector('.ej-cost-label');
+    const amtRaw = row.querySelector('.ej-cost-amt');
+    const cat = (catRaw && catRaw.value || '').trim();
+    const label = (labRaw && labRaw.value || '').trim();
+    const raw = (amtRaw && amtRaw.value || '').trim();
+    const parsed = raw === '' ? 0 : parseFloat(raw);
+    const amount = Number.isNaN(parsed) ? 0 : parsed;
+    if (!label && (raw === '' || amount === 0)) return;
+    const category = cat || 'materials';
+    out.push({
+      category,
+      label: label || (String(category).toLowerCase() === 'materials' ? 'Material' : ''),
+      amount,
+    });
+  });
+  return out;
 }
 
 async function openEditJob(id) {
@@ -2361,6 +2471,7 @@ async function openEditJob(id) {
   const eHw = document.getElementById('ej-hours-worked');
   if (eHw) eHw.value = (j.hours_worked != null && j.hours_worked !== '') ? String(j.hours_worked) : '';
   syncEjJobTimeFields();
+  renderEjCostRows(j);
   openModal('modal-edit-job');
 }
 
@@ -2402,6 +2513,7 @@ async function saveJobEdit() {
       payload.hours_worked = n;
     }
   }
+  payload.job_costs = collectEjCostRows();
   try {
     const r = await fetch('/api/v1/jobs/' + encodeURIComponent(jid), {
       method: 'PATCH',

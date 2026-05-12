@@ -65,6 +65,25 @@ class TestJobAPI(unittest.TestCase):
         self.assertEqual(data.get("hours_worked"), 2.5)
         self.assertEqual(data.get("workflow_status"), "In Progress")
 
+    def test_patch_job_costs(self) -> None:
+        body = {
+            "job_costs": [
+                {"category": "materials", "label": "Mulch", "amount": 45.5},
+                {"category": "Paint supplies", "label": "Primer", "amount": 12},
+            ],
+        }
+        r = self.client.patch("/api/v1/jobs/1", json=body)
+        self.assertEqual(r.status_code, 200)
+        costs = r.json().get("job_costs") or []
+        self.assertEqual(len(costs), 2)
+        self.assertEqual(costs[0]["category"], "materials")
+        self.assertEqual(costs[0]["label"], "Mulch")
+        self.assertEqual(costs[0]["amount"], 45.5)
+        self.assertEqual(costs[1]["category"], "Paint supplies")
+        self.assertEqual(costs[1]["amount"], 12.0)
+        got = self.client.get("/api/v1/jobs/1").json().get("job_costs") or []
+        self.assertEqual(len(got), 2)
+
 
 def test_update_job_version_mismatch() -> None:
     with pytest.raises(ValueError, match="Version mismatch: Job has been modified by another user."):
