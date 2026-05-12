@@ -2,16 +2,23 @@ from __future__ import annotations
 
 import csv
 import json
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app import config
 from app.audit_api import append_audit_log
+from app.attachment_utils import coerce_attachments_list
 from app.database import get_db
 from app.entities import Customer, CustomerProperty
 from app.models import Customer as CustomerORM
+from app.s3_uploads import (
+    delete_all_stored_attachments_in_list,
+    delete_attachments_removed_from_lists,
+    enrich_attachments_for_display,
+)
 
 router = APIRouter(tags=["customers"])
 
@@ -43,6 +50,7 @@ class CustomerPatchRequest(BaseModel):
     price_agreed_type: Optional[Literal["hourly", "fixed"]] = None
     price_agreed_amount: Optional[float] = None
     fuel_cost: Optional[float] = Field(default=None, ge=0)
+    attachments: Optional[list[Any]] = None
 
 
 class ArchiveSuccessResponse(BaseModel):
@@ -64,6 +72,27 @@ def _tags_from_column(raw: str | None) -> list[str]:
 
 def _tags_to_column(tags: list[str]) -> str:
     return json.dumps(list(tags))
+
+
+def _customer_detail_dict(row: CustomerORM) -> dict[str, Any]:
+    raw = getattr(row, "detail_json", None)
+    if not raw or not str(raw).strip():
+        return {"attachments": []}
+    try:
+        d = json.loads(str(raw))
+        if not isinstance(d, dict):
+            return {"attachments": []}
+    except json.JSONDecodeError:
+        return {"attachments": []}
+    d.setdefault("attachments", [])
+    d["attachments"] = coerce_attachments_list(d.get("attachments"))
+    return d
+
+
+def _save_customer_detail_json(row: CustomerORM, detail: dict[str, Any]) -> None:
+    out = dict(detail)
+    out["attachments"] = coerce_attachments_list(out.get("attachments"))
+    row.detail_json = json.dumps(out)
 
 
 def _retention_allows_archive(customer: Customer) -> bool:
@@ -89,6 +118,7 @@ def _row_to_customer(row: CustomerORM) -> Customer:
         price_agreed_type=row.price_agreed_type,
         price_agreed_amount=row.price_agreed_amount,
         fuel_cost=float(row.fuel_cost) if getattr(row, "fuel_cost", None) is not None else DEFAULT_FUEL_COST,
+        attachments=enrich_attachments_for_display(_customer_detail_dict(row).get("attachments") or []),
     )
 
 
@@ -171,6 +201,12 @@ def patch_customer(customer_id: int, body: CustomerPatchRequest, db: Session = D
     customer = _row_to_customer(row)
     raw = body.model_dump(exclude_unset=True)
     data = dict(raw)
+    if "attachments" in raw:
+        before_att = _customer_detail_dict(row).get("attachments", [])
+        new_att = coerce_attachments_list(raw["attachments"])
+        _save_customer_detail_json(row, {"attachments": new_att})
+        delete_attachments_removed_from_lists(before_att, new_att)
+        data.pop("attachments", None)
     if "property_address" in data:
         _sync_primary_property_address_entity(customer, data.pop("property_address"))
         _sync_primary_property_address_row(row, customer.properties[0].address if customer.properties else None)
@@ -205,6 +241,48 @@ def patch_customer(customer_id: int, body: CustomerPatchRequest, db: Session = D
     return _row_to_customer(row)
 
 
+@router.post("/api/v1/customers/{customer_id}/attachments")
+async def post_customer_attachment(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    file: UploadFile = File(...),
+) -> dict[str, str]:
+    """Upload one image and append to the customer ``attachments`` list."""
+    if not config.s3_job_attachments_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Photo storage is not configured. Set S3_ENDPOINT_URL, S3_ACCESS_KEY_ID, "
+            "S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME, and S3_PUBLIC_BASE_URL.",
+        )
+    row = db.get(CustomerORM, customer_id)
+    if row is None or row.is_archived:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
+    file_bytes = await file.read()
+    try:
+        from app.s3_uploads import upload_job_image
+
+        item = upload_job_image(
+            scope="customer",
+            scope_id=customer_id,
+            original_filename=file.filename or "photo.jpg",
+            content_type=file.content_type,
+            body=file_bytes,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
+    detail = _customer_detail_dict(row)
+    att = coerce_attachments_list(detail.get("attachments"))
+    att.append(item)
+    detail["attachments"] = att
+    _save_customer_detail_json(row, detail)
+    db.commit()
+    db.refresh(row)
+    disp = enrich_attachments_for_display([item])
+    return disp[0] if disp else item
+
+
 @router.delete(
     "/api/v1/customers/{customer_id}",
     response_model=ArchiveSuccessResponse,
@@ -227,6 +305,7 @@ def soft_delete_customer(
             detail="Customer cannot be archived while retention rules apply",
         )
     before = {"customer_id": customer_id, "archived": row.is_archived}
+    delete_all_stored_attachments_in_list(_customer_detail_dict(row).get("attachments"))
     row.is_archived = True
     db.commit()
     append_audit_log(

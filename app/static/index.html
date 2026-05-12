@@ -503,9 +503,107 @@
       box-shadow: 0 3px 14px rgba(27, 67, 50, 0.1);
     }
 
+    /* First-attachment preview in data tables — thumbnail is the primary control */
+    .row-thumb-hit {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.18rem;
+      margin: 0;
+      padding: 0.3rem;
+      border: none;
+      border-radius: 0.55rem;
+      background: transparent;
+      cursor: pointer;
+      vertical-align: middle;
+      line-height: 0;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
+    .row-thumb-hit:hover {
+      background: linear-gradient(165deg, rgba(45, 106, 79, 0.1) 0%, rgba(45, 106, 79, 0.04) 100%);
+    }
+    .row-thumb-hit:active {
+      transform: scale(0.97);
+    }
+    .row-thumb-hit:focus-visible {
+      outline: 2px solid var(--green-600);
+      outline-offset: 2px;
+    }
+    .row-thumb-hit--static {
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.88;
+    }
+    .row-thumb-hit--static:hover {
+      background: transparent;
+    }
+    .row-thumb-hit--static:active {
+      transform: none;
+    }
+    .row-thumb-hit__inner {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.14rem;
+    }
+    .row-thumb-wrap {
+      display: inline-flex;
+      width: 48px;
+      height: 48px;
+      border-radius: 0.42rem;
+      overflow: hidden;
+      border: 1px solid rgba(45, 106, 79, 0.22);
+      background: linear-gradient(145deg, var(--green-50) 0%, rgba(255, 255, 255, 0.55) 100%);
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(27, 67, 50, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+    .row-thumb-hit:hover:not(.row-thumb-hit--static) .row-thumb-wrap,
+    .row-thumb-hit:hover:not(.row-thumb-hit--static) .row-thumb-empty {
+      transform: translateY(-2px);
+      border-color: rgba(45, 106, 79, 0.45);
+      box-shadow: 0 10px 26px rgba(27, 67, 50, 0.16), 0 0 0 1px rgba(45, 106, 79, 0.12);
+    }
+    .row-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .row-thumb-empty {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: rgba(45, 106, 79, 0.45);
+      border: 1.5px dashed rgba(45, 106, 79, 0.28);
+      border-radius: 0.42rem;
+      background: linear-gradient(160deg, var(--green-50) 0%, var(--surface) 70%);
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+    .row-thumb-extra {
+      font-size: 0.6rem;
+      font-weight: 800;
+      color: var(--green-800);
+      line-height: 1;
+      letter-spacing: 0.03em;
+      background: rgba(45, 106, 79, 0.14);
+      padding: 0.14rem 0.4rem;
+      border-radius: 0.35rem;
+      border: 1px solid rgba(45, 106, 79, 0.12);
+    }
+
     /* 16px+ avoids iOS zoom-on-focus on file inputs in job modals */
     #jd-photo-input,
-    #rd-photo-input {
+    #rd-photo-input,
+    #pl-photo-input,
+    #cu-photo-input {
       font-size: 1rem;
       max-width: 100%;
     }
@@ -974,6 +1072,7 @@
               <thead>
                 <tr>
                   <th>#</th>
+                  <th aria-label="Photo"></th>
                   <th>When</th>
                   <th>Customer</th>
                   <th>Who's job</th>
@@ -985,7 +1084,7 @@
                 </tr>
               </thead>
               <tbody id="jobs-tbody">
-                <tr><td colspan="9" class="loading">Loading jobs…</td></tr>
+                <tr><td colspan="10" class="loading">Loading jobs…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1004,10 +1103,10 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Description</th><th>Cadence</th><th>Start</th><th>Repeat</th><th>Property</th><th>Customer</th><th>Instances</th><th>Total costs</th><th>Status</th><th></th></tr>
+                <tr><th aria-label="Photo"></th><th>Description</th><th>Cadence</th><th>Start</th><th>Repeat</th><th>Property</th><th>Customer</th><th>Instances</th><th>Total costs</th><th>Status</th><th></th></tr>
               </thead>
               <tbody id="recurring-rules-tbody">
-                <tr><td colspan="10" class="loading">Loading recurring rules…</td></tr>
+                <tr><td colspan="11" class="loading">Loading recurring rules…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1034,6 +1133,7 @@
             <thead>
               <tr>
                 <th>Name</th>
+                <th aria-label="Photo"></th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Property</th>
@@ -1044,7 +1144,7 @@
               </tr>
             </thead>
             <tbody id="customers-tbody">
-              <tr><td colspan="8" class="loading">Loading customers…</td></tr>
+              <tr><td colspan="9" class="loading">Loading customers…</td></tr>
             </tbody>
           </table>
         </div>
@@ -1074,10 +1174,10 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Plant</th><th>Quantity</th><th>Notes</th><th>Status</th><th></th></tr>
+                <tr><th>Plant</th><th>Quantity</th><th>Notes</th><th>Status</th><th>Photo</th><th></th></tr>
               </thead>
               <tbody id="plants-wanted-tbody">
-                <tr><td colspan="5" class="loading">Loading…</td></tr>
+                <tr><td colspan="6" class="loading">Loading…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1099,10 +1199,10 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Plant</th><th>Quantity</th><th>Notes</th><th>Status</th><th></th></tr>
+                <tr><th>Plant</th><th>Quantity</th><th>Notes</th><th>Status</th><th>Photo</th><th></th></tr>
               </thead>
               <tbody id="plants-giveaway-tbody">
-                <tr><td colspan="5" class="loading">Loading…</td></tr>
+                <tr><td colspan="6" class="loading">Loading…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1447,6 +1547,25 @@
   </div>
 </div>
 
+<!-- Customer detail (contact + photos) -->
+<div class="modal-backdrop" id="modal-customer-detail">
+  <div class="modal modal--wide">
+    <div class="modal-title" id="cu-detail-title">Customer</div>
+    <p id="cu-storage-hint" style="display:none;font-size:.8rem;color:#6b4a00;margin:-.35rem 0 .75rem;padding:.5rem .65rem;background:#fff8e6;border-radius:.35rem;border:1px solid var(--border)">Photo uploads need object storage env vars (see server docs).</p>
+    <div id="cu-detail-body" style="font-size:.9rem;line-height:1.5"></div>
+    <div class="field" style="margin-top:1rem">
+      <label>Add photos</label>
+      <input type="file" id="cu-photo-input" accept="image/jpeg,image/jpg,.jpg,.jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
+      <button type="button" id="cu-upload-btn" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadCustomerPhotos()">Upload to storage</button>
+      <div id="cu-upload-progress" class="jd-upload-progress" role="status" aria-live="polite" hidden></div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closeCustomerDetailModal()">Close</button>
+      <button type="button" class="btn btn-primary" onclick="openEditCustomerFromCuDetail()">Edit customer</button>
+    </div>
+  </div>
+</div>
+
 <!-- New Quote -->
 <div class="modal-backdrop" id="modal-new-quote">
   <div class="modal" style="max-width:640px">
@@ -1727,6 +1846,25 @@
   </div>
 </div>
 
+<!-- Plant listing detail (specs + photos) -->
+<div class="modal-backdrop" id="modal-plant-detail">
+  <div class="modal modal--wide">
+    <div class="modal-title" id="pl-detail-title">Plant listing</div>
+    <p id="pl-storage-hint" style="display:none;font-size:.8rem;color:#6b4a00;margin:-.35rem 0 .75rem;padding:.5rem .65rem;background:#fff8e6;border-radius:.35rem;border:1px solid var(--border)">Photo uploads need object storage env vars (see server docs).</p>
+    <div id="pl-detail-body" style="font-size:.9rem;line-height:1.5"></div>
+    <div class="field" style="margin-top:1rem">
+      <label>Add photos</label>
+      <input type="file" id="pl-photo-input" accept="image/jpeg,image/jpg,.jpg,.jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
+      <button type="button" id="pl-upload-btn" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadPlantListingPhotos()">Upload to storage</button>
+      <div id="pl-upload-progress" class="jd-upload-progress" role="status" aria-live="polite" hidden></div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-outline" onclick="closePlantDetailModal()">Close</button>
+      <button type="button" class="btn btn-primary" onclick="openEditPlantFromDetail()">Edit listing</button>
+    </div>
+  </div>
+</div>
+
 <!-- Map & directions -->
 <div class="modal-backdrop" id="modal-map">
   <div class="modal modal--wide">
@@ -1991,6 +2129,16 @@ function closeModal(id) {
     const frame = document.getElementById('map-embed');
     if (frame) frame.src = 'about:blank';
   }
+  if (id === 'modal-plant-detail') {
+    try {
+      if ((location.hash || '').startsWith('#plant-')) history.replaceState(null, '', location.pathname + location.search);
+    } catch (e) { /* ignore */ }
+  }
+  if (id === 'modal-customer-detail') {
+    try {
+      if ((location.hash || '').startsWith('#customer-')) history.replaceState(null, '', location.pathname + location.search);
+    } catch (e) { /* ignore */ }
+  }
 }
 document.querySelectorAll('.modal-backdrop').forEach(b => {
   b.addEventListener('click', e => {
@@ -2013,6 +2161,31 @@ document.addEventListener('keydown', e => {
 
 window.addEventListener('resize', () => {
   if (window.matchMedia('(min-width: 641px)').matches) closeMobileNav();
+});
+
+window.addEventListener('hashchange', () => {
+  const h = location.hash || '';
+  const mPlant = /^#plant-(\d+)$/.exec(h);
+  if (mPlant) {
+    const id = Number(mPlant[1]);
+    const plantsPage = document.getElementById('page-plants');
+    if (plantsPage && plantsPage.classList.contains('active')) {
+      openPlantDetail(id, { setHash: false });
+    } else {
+      nav('plants');
+    }
+    return;
+  }
+  const mCust = /^#customer-(\d+)$/.exec(h);
+  if (mCust) {
+    const id = Number(mCust[1]);
+    const custPage = document.getElementById('page-customers');
+    if (custPage && custPage.classList.contains('active')) {
+      openCustomerDetail(id, { setHash: false });
+    } else {
+      nav('customers');
+    }
+  }
 });
 
 // ══ MAP & LOCATION ══
@@ -2677,6 +2850,10 @@ async function jdPhotoTileDrop(ev) {
     await moveJobAttachmentStep(Number(payload.id), Number(payload.from), to);
   } else if (payload.kind === 'recurring') {
     await moveRecurringAttachmentStep(Number(payload.id), Number(payload.from), to);
+  } else if (payload.kind === 'plant') {
+    await movePlantListingAttachmentStep(Number(payload.id), Number(payload.from), to);
+  } else if (payload.kind === 'customer') {
+    await moveCustomerAttachmentStep(Number(payload.id), Number(payload.from), to);
   }
 }
 
@@ -2702,6 +2879,383 @@ function moveRecurringPhotoUp(ruleId, idx) {
 
 function moveRecurringPhotoDown(ruleId, idx) {
   moveRecurringAttachmentStep(ruleId, idx, idx + 1);
+}
+
+let _plDetailId = null;
+let _plDetailKind = 'wanted';
+
+async function persistPlantAttachmentsFromList(listingId, atts) {
+  const pr = await fetch('/api/v1/plant-listings/' + encodeURIComponent(listingId), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ attachments: attachmentPayloadForPatch(atts) }),
+  });
+  if (!pr.ok) throw new Error(await pr.text());
+  await pr.json();
+  await loadPlantListings();
+}
+
+async function movePlantListingAttachmentStep(listingId, fromIdx, toIdx) {
+  if (fromIdx === toIdx) return;
+  try {
+    const r = await fetch('/api/v1/plant-listings/' + encodeURIComponent(listingId));
+    if (!r.ok) throw new Error(await r.text());
+    const p = await r.json();
+    const atts = Array.isArray(p.attachments) ? p.attachments.slice() : [];
+    const next = reorderAttachmentsArray(atts, fromIdx, toIdx);
+    await persistPlantAttachmentsFromList(listingId, next);
+    toast('Photo order updated');
+    openPlantDetail(listingId, { setHash: false });
+  } catch (e) {
+    toast('Could not reorder', 'error');
+  }
+}
+
+function movePlantListingPhotoUp(listingId, idx) {
+  movePlantListingAttachmentStep(listingId, idx, idx - 1);
+}
+
+function movePlantListingPhotoDown(listingId, idx) {
+  movePlantListingAttachmentStep(listingId, idx, idx + 1);
+}
+
+function plantListingPhotosHtml(p) {
+  const att = Array.isArray(p.attachments) ? p.attachments : [];
+  if (!att.length) return '<p class="jd-photo-empty">No photos yet — add images below.</p>';
+  const lid = Number(p.id);
+  const n = att.length;
+  return '<div class="jd-photo-grid">' + att.map(function (a, i) {
+    const u = esc(String(a.file_url || ''));
+    const fn = esc(String(a.filename || 'photo'));
+    const pos = i + 1;
+    const upDis = i === 0 ? ' disabled' : '';
+    const downDis = i >= n - 1 ? ' disabled' : '';
+    return '<figure class="jd-photo-tile" data-photo-idx="' + i + '" ondragover="jdPhotoTileDragOver(event)" ondragleave="jdPhotoTileDragLeave(event)" ondrop="jdPhotoTileDrop(event)">' +
+      '<div class="jd-photo-toolbar">' +
+      '<span class="jd-photo-pos" title="Order">' + pos + '</span>' +
+      '<button type="button" class="jd-photo-drag" draggable="true" aria-label="Drag to reorder" title="Drag to reorder" data-entity-kind="plant" data-entity-id="' + lid + '" data-photo-from="' + i + '" ondragstart="jdPhotoHandleDragStart(event)">⋮⋮</button>' +
+      '<div class="jd-photo-order">' +
+      '<button type="button" class="btn btn-outline btn-sm"' + upDis + ' aria-label="Move up" onclick="movePlantListingPhotoUp(' + lid + ',' + i + ')">↑</button>' +
+      '<button type="button" class="btn btn-outline btn-sm"' + downDis + ' aria-label="Move down" onclick="movePlantListingPhotoDown(' + lid + ',' + i + ')">↓</button>' +
+      '</div></div>' +
+      '<a class="jd-photo-frame" href="' + u + '" target="_blank" rel="noopener noreferrer" title="Open full size"><img src="' + u + '" alt="" referrerpolicy="no-referrer" loading="lazy"></a>' +
+      '<figcaption class="jd-photo-caption" title="' + fn + '">' + fn + '</figcaption>' +
+      '<button type="button" class="btn btn-outline btn-sm jd-photo-remove" onclick="removePlantListingPhoto(' + lid + ',' + i + ')">Remove</button></figure>';
+  }).join('') + '</div>';
+}
+
+function plantListingDetailSpecHtml(p) {
+  const kindLabel = (p.kind || '') === 'giveaway' ? 'Giveaway' : 'Wanted';
+  const rows = [
+    ['Listing type', esc(kindLabel)],
+    ['Plant name', esc(p.plant_name || '—')],
+    ['Quantity / form', esc(p.quantity || '—')],
+    ['Status', esc((p.status || '—').replace(/_/g, ' '))],
+  ];
+  const tbl = '<table style="width:100%;border-collapse:collapse;margin:.35rem 0 .75rem"><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td style="padding:.2rem .5rem .2rem 0;color:var(--muted);white-space:nowrap;vertical-align:top">' + r[0] + '</td><td style="padding:.2rem 0">' + r[1] + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  const notes = '<div style="margin:.5rem 0"><strong>Notes</strong><p style="margin:.35rem 0 0;white-space:pre-wrap">' + esc(p.notes || '—') + '</p></div>';
+  return tbl + notes + '<div class="jd-photo-heading">Photos</div>' + plantListingPhotosHtml(p);
+}
+
+async function openPlantDetail(listingId, opts) {
+  opts = opts || {};
+  _plDetailId = Number(listingId);
+  if (Number.isNaN(_plDetailId)) return;
+  if (opts.setHash !== false) {
+    try { history.replaceState(null, '', '#plant-' + _plDetailId); } catch (e) { /* ignore */ }
+  }
+  let p = null;
+  try {
+    const r = await fetch('/api/v1/plant-listings/' + encodeURIComponent(_plDetailId));
+    if (r.ok) p = await r.json();
+  } catch (e) { /* ignore */ }
+  if (!p) p = _plantListings.find(function (x) { return Number(x.id) === _plDetailId; });
+  if (!p) {
+    toast('Listing not found', 'error');
+    return;
+  }
+  _plDetailKind = (p.kind === 'giveaway' ? 'giveaway' : 'wanted');
+  setPlantsTab(_plDetailKind);
+  const title = (p.kind === 'wanted' ? 'Wanted · ' : 'Giveaway · ') + (p.plant_name || 'Plant');
+  document.getElementById('pl-detail-title').textContent = title;
+  document.getElementById('pl-detail-body').innerHTML = plantListingDetailSpecHtml(p);
+  const hint = document.getElementById('pl-storage-hint');
+  if (hint) hint.style.display = 'none';
+  openModal('modal-plant-detail');
+}
+
+function closePlantDetailModal() {
+  closeModal('modal-plant-detail');
+}
+
+function openEditPlantFromDetail() {
+  const id = _plDetailId;
+  closePlantDetailModal();
+  if (id != null && !Number.isNaN(id)) openPlantModal(_plDetailKind || 'wanted', id);
+}
+
+async function removePlantListingPhoto(listingId, idx) {
+  if (!confirm('Remove this photo from the listing?')) return;
+  try {
+    const r = await fetch('/api/v1/plant-listings/' + encodeURIComponent(listingId));
+    if (!r.ok) throw new Error(await r.text());
+    const p = await r.json();
+    const atts = Array.isArray(p.attachments) ? p.attachments.slice() : [];
+    atts.splice(idx, 1);
+    await persistPlantAttachmentsFromList(listingId, atts);
+    toast('Photo removed');
+    openPlantDetail(listingId, { setHash: false });
+  } catch (e) {
+    toast('Could not remove photo', 'error');
+  }
+}
+
+async function uploadPlantListingPhotos() {
+  const inp = document.getElementById('pl-photo-input');
+  const prog = document.getElementById('pl-upload-progress');
+  const btn = document.getElementById('pl-upload-btn');
+  if (_plDetailId == null || Number.isNaN(_plDetailId) || !inp || !inp.files || !inp.files.length) {
+    toast('Choose one or more images', 'error');
+    return;
+  }
+  const files = Array.from(inp.files);
+  const hint = document.getElementById('pl-storage-hint');
+  const total = files.length;
+  if (prog) {
+    prog.hidden = false;
+    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
+  }
+  if (btn) btn.disabled = true;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
+      const fd = new FormData();
+      fd.append('file', files[i]);
+      const r = await fetch('/api/v1/plant-listings/' + encodeURIComponent(_plDetailId) + '/attachments', { method: 'POST', body: fd });
+      if (!r.ok) {
+        let msg = await r.text();
+        try {
+          const o = JSON.parse(msg);
+          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
+        } catch (e2) { /* keep */ }
+        if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
+        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+        return;
+      }
+    }
+    inp.value = '';
+    if (prog) {
+      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
+      setTimeout(function () {
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+      }, 1600);
+    }
+    await loadPlantListings();
+    toast('Photos uploaded');
+    openPlantDetail(_plDetailId, { setHash: false });
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+let _cuDetailId = null;
+
+async function persistCustomerAttachmentsFromList(customerId, atts) {
+  const pr = await fetch('/api/v1/customers/' + encodeURIComponent(customerId), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ attachments: attachmentPayloadForPatch(atts) }),
+  });
+  if (!pr.ok) throw new Error(await pr.text());
+  await pr.json();
+  await loadCustomers();
+}
+
+async function moveCustomerAttachmentStep(customerId, fromIdx, toIdx) {
+  if (fromIdx === toIdx) return;
+  try {
+    const r = await fetch('/api/v1/customers/' + encodeURIComponent(customerId));
+    if (!r.ok) throw new Error(await r.text());
+    const c = await r.json();
+    const atts = Array.isArray(c.attachments) ? c.attachments.slice() : [];
+    const next = reorderAttachmentsArray(atts, fromIdx, toIdx);
+    await persistCustomerAttachmentsFromList(customerId, next);
+    toast('Photo order updated');
+    openCustomerDetail(customerId, { setHash: false });
+  } catch (e) {
+    toast('Could not reorder', 'error');
+  }
+}
+
+function moveCustomerPhotoUp(customerId, idx) {
+  moveCustomerAttachmentStep(customerId, idx, idx - 1);
+}
+
+function moveCustomerPhotoDown(customerId, idx) {
+  moveCustomerAttachmentStep(customerId, idx, idx + 1);
+}
+
+function customerPhotosHtml(c) {
+  const att = Array.isArray(c.attachments) ? c.attachments : [];
+  if (!att.length) return '<p class="jd-photo-empty">No photos yet — add images below (e.g. gate or property).</p>';
+  const cid = Number(c.id);
+  const n = att.length;
+  return '<div class="jd-photo-grid">' + att.map(function (a, i) {
+    const u = esc(String(a.file_url || ''));
+    const fn = esc(String(a.filename || 'photo'));
+    const pos = i + 1;
+    const upDis = i === 0 ? ' disabled' : '';
+    const downDis = i >= n - 1 ? ' disabled' : '';
+    return '<figure class="jd-photo-tile" data-photo-idx="' + i + '" ondragover="jdPhotoTileDragOver(event)" ondragleave="jdPhotoTileDragLeave(event)" ondrop="jdPhotoTileDrop(event)">' +
+      '<div class="jd-photo-toolbar">' +
+      '<span class="jd-photo-pos" title="Order">' + pos + '</span>' +
+      '<button type="button" class="jd-photo-drag" draggable="true" aria-label="Drag to reorder" title="Drag to reorder" data-entity-kind="customer" data-entity-id="' + cid + '" data-photo-from="' + i + '" ondragstart="jdPhotoHandleDragStart(event)">⋮⋮</button>' +
+      '<div class="jd-photo-order">' +
+      '<button type="button" class="btn btn-outline btn-sm"' + upDis + ' aria-label="Move up" onclick="moveCustomerPhotoUp(' + cid + ',' + i + ')">↑</button>' +
+      '<button type="button" class="btn btn-outline btn-sm"' + downDis + ' aria-label="Move down" onclick="moveCustomerPhotoDown(' + cid + ',' + i + ')">↓</button>' +
+      '</div></div>' +
+      '<a class="jd-photo-frame" href="' + u + '" target="_blank" rel="noopener noreferrer" title="Open full size"><img src="' + u + '" alt="" referrerpolicy="no-referrer" loading="lazy"></a>' +
+      '<figcaption class="jd-photo-caption" title="' + fn + '">' + fn + '</figcaption>' +
+      '<button type="button" class="btn btn-outline btn-sm jd-photo-remove" onclick="removeCustomerPhoto(' + cid + ',' + i + ')">Remove</button></figure>';
+  }).join('') + '</div>';
+}
+
+function customerDetailSpecHtml(c) {
+  const addr = esc(customerPrimaryAddress(c) || '—');
+  const tags = (c.tags && c.tags.length) ? esc(c.tags.join(', ')) : '—';
+  const price = esc(customerPriceAgreedLabel(c) || '—');
+  const fuel = esc('$' + customerFuelDisplay(c) + ' / visit');
+  const rows = [
+    ['Email', esc(c.email || '—')],
+    ['Phone', esc(c.phone || '—')],
+    ['Property', addr],
+    ['Tags', tags],
+    ['Agreed pricing', price],
+    ['Fuel', fuel],
+  ];
+  const tbl = '<table style="width:100%;border-collapse:collapse;margin:.35rem 0 .75rem"><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td style="padding:.2rem .5rem .2rem 0;color:var(--muted);white-space:nowrap;vertical-align:top">' + r[0] + '</td><td style="padding:.2rem 0">' + r[1] + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  const notes = (c.notes && String(c.notes).trim())
+    ? '<div style="margin:.5rem 0"><strong>Notes</strong><p style="margin:.35rem 0 0;white-space:pre-wrap">' + esc(c.notes) + '</p></div>'
+    : '';
+  return tbl + notes + '<div class="jd-photo-heading">Photos</div>' + customerPhotosHtml(c);
+}
+
+async function openCustomerDetail(customerId, opts) {
+  opts = opts || {};
+  _cuDetailId = Number(customerId);
+  if (Number.isNaN(_cuDetailId)) return;
+  if (opts.setHash !== false) {
+    try { history.replaceState(null, '', '#customer-' + _cuDetailId); } catch (e) { /* ignore */ }
+  }
+  let c = null;
+  try {
+    const r = await fetch('/api/v1/customers/' + encodeURIComponent(_cuDetailId));
+    if (r.ok) c = await r.json();
+  } catch (e) { /* ignore */ }
+  if (!c) c = _customers.find(function (x) { return Number(x.id) === _cuDetailId; });
+  if (!c) {
+    toast('Customer not found', 'error');
+    return;
+  }
+  document.getElementById('cu-detail-title').textContent = c.name || 'Customer';
+  document.getElementById('cu-detail-body').innerHTML = customerDetailSpecHtml(c);
+  const hint = document.getElementById('cu-storage-hint');
+  if (hint) hint.style.display = 'none';
+  openModal('modal-customer-detail');
+}
+
+function closeCustomerDetailModal() {
+  closeModal('modal-customer-detail');
+}
+
+function openEditCustomerFromCuDetail() {
+  const id = _cuDetailId;
+  closeModal('modal-customer-detail');
+  if (id != null && !Number.isNaN(id)) openEditCustomer(id);
+}
+
+async function removeCustomerPhoto(customerId, idx) {
+  if (!confirm('Remove this photo from the customer record?')) return;
+  try {
+    const r = await fetch('/api/v1/customers/' + encodeURIComponent(customerId));
+    if (!r.ok) throw new Error(await r.text());
+    const c = await r.json();
+    const atts = Array.isArray(c.attachments) ? c.attachments.slice() : [];
+    atts.splice(idx, 1);
+    await persistCustomerAttachmentsFromList(customerId, atts);
+    toast('Photo removed');
+    openCustomerDetail(customerId, { setHash: false });
+  } catch (e) {
+    toast('Could not remove photo', 'error');
+  }
+}
+
+async function uploadCustomerPhotos() {
+  const inp = document.getElementById('cu-photo-input');
+  const prog = document.getElementById('cu-upload-progress');
+  const btn = document.getElementById('cu-upload-btn');
+  if (_cuDetailId == null || Number.isNaN(_cuDetailId) || !inp || !inp.files || !inp.files.length) {
+    toast('Choose one or more images', 'error');
+    return;
+  }
+  const files = Array.from(inp.files);
+  const hint = document.getElementById('cu-storage-hint');
+  const total = files.length;
+  if (prog) {
+    prog.hidden = false;
+    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
+  }
+  if (btn) btn.disabled = true;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
+      const fd = new FormData();
+      fd.append('file', files[i]);
+      const r = await fetch('/api/v1/customers/' + encodeURIComponent(_cuDetailId) + '/attachments', { method: 'POST', body: fd });
+      if (!r.ok) {
+        let msg = await r.text();
+        try {
+          const o = JSON.parse(msg);
+          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
+        } catch (e2) { /* keep */ }
+        if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
+        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+        return;
+      }
+    }
+    inp.value = '';
+    if (prog) {
+      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
+      setTimeout(function () {
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+      }, 1600);
+    }
+    await loadCustomers();
+    toast('Photos uploaded');
+    openCustomerDetail(_cuDetailId, { setHash: false });
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function jobDetailPhotosHtml(j) {
@@ -3016,10 +3570,35 @@ async function uploadRecurringDetailPhotos() {
   }
 }
 
+function firstAttachmentFileUrl(entity) {
+  if (!entity || !Array.isArray(entity.attachments) || !entity.attachments.length) return '';
+  const a = entity.attachments[0];
+  const u = a && String(a.file_url || '').trim();
+  return u || '';
+}
+
+/** Square thumb of first attachment; optional ``openClickJs`` (e.g. ``openJobDetail(3)``) makes it the primary control. */
+function rowMiniThumbStackHtml(entity, altText, openClickJs, ariaLabel) {
+  const arr = entity && Array.isArray(entity.attachments) ? entity.attachments : [];
+  const n = arr.length;
+  const url = firstAttachmentFileUrl(entity);
+  const extra = n > 1 ? '<span class="row-thumb-extra">+' + (n - 1) + '</span>' : '';
+  const alt = altText != null ? String(altText) : 'Photo';
+  const thumb = url
+    ? '<span class="row-thumb-wrap"><img class="row-thumb-img" src="' + esc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer"></span>'
+    : '<span class="row-thumb-empty" aria-hidden="true">+</span>';
+  const inner = '<span class="row-thumb-hit__inner">' + thumb + extra + '</span>';
+  const label = (ariaLabel != null && String(ariaLabel).trim()) ? String(ariaLabel).trim() : ('View photos and details' + (alt && alt !== 'Photo' ? ' · ' + alt : ''));
+  if (openClickJs && String(openClickJs).trim()) {
+    return '<button type="button" class="row-thumb-hit" onclick="' + String(openClickJs).trim() + '" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + inner + '</button>';
+  }
+  return '<span class="row-thumb-hit row-thumb-hit--static" title="' + esc(alt) + '">' + inner + '</span>';
+}
+
 function renderJobs(arr) {
   const tbody = document.getElementById('jobs-tbody');
   if (!arr.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
       <p>No jobs found</p></div></td></tr>`;
     return;
@@ -3027,14 +3606,19 @@ function renderJobs(arr) {
   tbody.innerHTML = arr.map(j => {
     const jid = j.job_id != null ? Number(j.job_id) : null;
     const descShort = esc((j.description || '').slice(0, 60));
-    const descCell = (jid != null && !Number.isNaN(jid))
-      ? `<button type="button" class="job-spec-link" onclick="event.stopPropagation();openJobDetail(${jid})">${descShort || '—'}</button>`
-      : descShort || '—';
+    const descCell = descShort || '—';
     const idCell = (jid != null && !Number.isNaN(jid))
-      ? `<button type="button" class="job-spec-link" onclick="event.stopPropagation();openJobDetail(${jid})"><strong>#${jid}</strong></button>`
+      ? `<strong>#${jid}</strong>`
       : `<strong>#${esc(String(j.job_id))}</strong>`;
+    const thumbAria = (jid != null && !Number.isNaN(jid))
+      ? ('Job #' + jid + ' — photos, notes, and attachments')
+      : 'Job — photos and details';
+    const thumbCell = (jid != null && !Number.isNaN(jid))
+      ? rowMiniThumbStackHtml(j, (j.description || ('Job #' + jid)).slice(0, 120), 'openJobDetail(' + jid + ')', thumbAria)
+      : rowMiniThumbStackHtml(j, (j.description || 'Job').slice(0, 120), null, thumbAria);
     return `<tr>
       <td>${idCell}</td>
+      <td style="vertical-align:middle">${thumbCell}</td>
       <td style="white-space:nowrap;font-size:.86rem">${esc(formatJobWhen(j))}${esc(formatJobTimeExtras(j))}</td>
       <td>${esc(j.customer?.name || '—')}</td>
       <td>${j.assignee && String(j.assignee).trim() ? esc(String(j.assignee).trim()) : '—'}</td>
@@ -3088,7 +3672,10 @@ function renderJobsList() {
       String(formatJobTimeExtras(j)).toLowerCase().includes(ql) ||
       String(j.estimated_duration_minutes != null ? j.estimated_duration_minutes : '').includes(ql) ||
       String(j.hours_worked != null ? j.hours_worked : '').includes(ql) ||
-      String(jobExtraCostsSearchText(j)).toLowerCase().includes(ql)
+      String(jobExtraCostsSearchText(j)).toLowerCase().includes(ql) ||
+      (Array.isArray(j.attachments) && j.attachments.some(function (a) {
+        return a && String(a.filename || '').toLowerCase().includes(ql);
+      }))
     );
   }
   renderJobs(list);
@@ -3541,32 +4128,50 @@ async function loadCustomers() {
   _customers = data?.customers ?? data ?? [];
   renderCustomers(_customers);
   populateCustomerDropdowns();
+  tryOpenCustomerHash();
+}
+
+function tryOpenCustomerHash() {
+  const h = location.hash || '';
+  const m = /^#customer-(\d+)$/.exec(h);
+  if (m && document.getElementById('page-customers') && document.getElementById('page-customers').classList.contains('active')) {
+    openCustomerDetail(Number(m[1]), { setHash: false });
+  }
 }
 
 function renderCustomers(arr) {
   const tbody = document.getElementById('customers-tbody');
   if (!arr.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       <p>No customers yet. Add your first customer!</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = arr.map(c => `
+  tbody.innerHTML = arr.map(c => {
+    const thumbCell = rowMiniThumbStackHtml(
+      c,
+      c.name || 'Customer',
+      'openCustomerDetail(' + c.id + ')',
+      (c.name || 'Customer') + ' — photos and contact'
+    );
+    const prop = esc((c.properties && c.properties[0] && c.properties[0].address) || c.property_address || '—');
+    return `
     <tr>
       <td><strong>${esc(c.name)}</strong></td>
+      <td style="vertical-align:middle">${thumbCell}</td>
       <td>${esc(c.email || '—')}</td>
       <td>${esc(c.phone || '—')}</td>
-      <td>${esc((c.properties && c.properties[0] && c.properties[0].address) || c.property_address || '—')}</td>
+      <td>${prop}</td>
       <td>${(c.tags || []).map(t => `<span class="badge badge-green">${esc(t)}</span>`).join(' ') || '—'}</td>
       <td>${(() => { const lbl = customerPriceAgreedLabel(c); return lbl ? '<strong>' + esc(lbl) + '</strong>' : '—'; })()}</td>
       <td><strong>$${esc(customerFuelDisplay(c))}</strong></td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="openMapForCustomer(${c.id})">Map</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditCustomer(${c.id})">Edit</button>
-        <button type="button" class="btn btn-outline btn-sm" onclick="viewCustomer(${c.id})">View</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="removeCustomer(${c.id})">Remove</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 async function removeCustomer(id) {
@@ -3594,16 +4199,23 @@ async function removeCustomer(id) {
 
 function filterCustomers(q) {
   const ql = q.toLowerCase();
-  const f = _customers.filter(c =>
-    (c.name || '').toLowerCase().includes(ql) ||
-    (c.email || '').toLowerCase().includes(ql) ||
-    (customerPriceAgreedLabel(c) || '').toLowerCase().includes(ql) ||
-    String(customerFuelDisplay(c)).includes(ql)
-  );
+  const f = _customers.filter(c => {
+    const att = Array.isArray(c.attachments) ? c.attachments : [];
+    const attMatch = att.some(function (a) {
+      return a && String(a.filename || '').toLowerCase().includes(ql);
+    });
+    const prop = (c.properties && c.properties[0] && c.properties[0].address) || c.property_address || '';
+    return (c.name || '').toLowerCase().includes(ql) ||
+      (c.email || '').toLowerCase().includes(ql) ||
+      (c.phone || '').toLowerCase().includes(ql) ||
+      String(prop).toLowerCase().includes(ql) ||
+      (c.tags || []).some(t => String(t).toLowerCase().includes(ql)) ||
+      (customerPriceAgreedLabel(c) || '').toLowerCase().includes(ql) ||
+      String(customerFuelDisplay(c)).includes(ql) ||
+      attMatch;
+  });
   renderCustomers(f);
 }
-
-function viewCustomer(id) { toast('Customer #' + id + ' — detail view coming soon'); }
 
 function customerPrimaryAddress(c) {
   const p = c.properties && c.properties[0];
@@ -3800,9 +4412,14 @@ function plantsFiltered(kind) {
   return _plantListings.filter(l => {
     if (l.kind !== kind) return false;
     if (!q) return true;
+    const att = Array.isArray(l.attachments) ? l.attachments : [];
+    const attMatch = att.some(function (a) {
+      return (a && String(a.filename || '').toLowerCase().includes(q));
+    });
     return (l.plant_name || '').toLowerCase().includes(q) ||
       (l.notes || '').toLowerCase().includes(q) ||
-      (l.quantity || '').toLowerCase().includes(q);
+      (l.quantity || '').toLowerCase().includes(q) ||
+      attMatch;
   });
 }
 
@@ -3811,7 +4428,7 @@ function renderPlantTables() {
     const tbody = document.getElementById('plants-' + kind + '-tbody');
     const rows = plantsFiltered(kind);
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty">
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22c4-4 8-8 8-14a8 8 0 0 0-16 0c0 6 4 10 8 14z"/></svg>
         <p>${kind === 'wanted' ? 'No plants on the wanted list yet.' : 'Nothing listed to give away yet.'}</p></div></td></tr>`;
       return;
@@ -3819,11 +4436,18 @@ function renderPlantTables() {
     tbody.innerHTML = rows.map(l => {
       const note = (l.notes || '');
       const noteShort = note.length > 90 ? note.slice(0, 90) + '…' : note;
+      const photoCell = rowMiniThumbStackHtml(
+        l,
+        l.plant_name || 'Plant',
+        'openPlantDetail(' + l.id + ')',
+        (l.kind === 'giveaway' ? 'Giveaway' : 'Wanted') + ' — ' + (l.plant_name || 'Plant') + ' — photos'
+      );
       return `<tr>
         <td><strong>${esc(l.plant_name)}</strong></td>
         <td>${esc(l.quantity || '—')}</td>
         <td>${esc(noteShort || '—')}</td>
         <td>${plantListingStatusBadge(kind, l.status)}</td>
+        <td>${photoCell}</td>
         <td style="white-space:nowrap">
           <button type="button" class="btn btn-outline btn-sm" onclick="openPlantModal('${kind}',${l.id})">Edit</button>
           <button type="button" class="btn btn-outline btn-sm" onclick="removePlantListing(${l.id})">Remove</button>
@@ -3837,6 +4461,15 @@ async function loadPlantListings() {
   const data = await api('/api/v1/plant-listings');
   _plantListings = data?.listings ?? data ?? [];
   renderPlantTables();
+  tryOpenPlantHash();
+}
+
+function tryOpenPlantHash() {
+  const h = location.hash || '';
+  const m = /^#plant-(\d+)$/.exec(h);
+  if (m && document.getElementById('page-plants') && document.getElementById('page-plants').classList.contains('active')) {
+    openPlantDetail(Number(m[1]), { setHash: false });
+  }
 }
 
 function openPlantModal(kind, id) {
@@ -3928,15 +4561,21 @@ function renderWeekFromSchedule(data) {
     const timeExtra = esc(formatJobTimeExtras(s));
     const jobLabelRaw = s.job_description || s.description || (s.job_id != null ? 'Job #' + s.job_id : '—');
     const jobLabelEsc = esc(jobLabelRaw);
-    const jobCell = (jid != null && !Number.isNaN(jid))
-      ? `<button type="button" class="job-spec-link" onclick="event.stopPropagation();openJobDetail(${jid})">${jobLabelEsc}</button>`
-      : jobLabelEsc;
+    const jobCell = jobLabelEsc;
+    const jobLike = jobLikeFromScheduleSlot(s);
+    const thumbAria = (jid != null && !Number.isNaN(jid))
+      ? ('Job #' + jid + ' — photos, notes, and attachments')
+      : 'Schedule row — photos';
+    const thumbCell = (jid != null && !Number.isNaN(jid))
+      ? rowMiniThumbStackHtml(jobLike, jobLabelRaw, 'openJobDetail(' + jid + ')', thumbAria)
+      : rowMiniThumbStackHtml(jobLike, jobLabelRaw, null, thumbAria);
     return `<tr>
       <td style="white-space:nowrap">${label}${timeExtra ? '<br><span style="font-size:.72rem;color:var(--muted);font-weight:600">' + timeExtra + '</span>' : ''}</td>
+      <td style="vertical-align:middle">${thumbCell}</td>
       <td>${jobCell}</td>
       <td>${esc(s.customer_name || s.customer?.name || '—')}</td>
       <td>${whoDisp}</td>
-      <td>${formatJobStatusColumnHtml(jobLikeFromScheduleSlot(s))}</td>
+      <td>${formatJobStatusColumnHtml(jobLike)}</td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-outline btn-sm" onclick="openEditJob(${Number(s.job_id)})">Edit</button>
         ${jid != null && !Number.isNaN(jid) ? `<button type="button" class="btn btn-outline btn-sm" onclick="removeJob(${jid})">Remove</button>` : ''}
@@ -3956,7 +4595,7 @@ function renderWeekFromSchedule(data) {
   if (slots.length) {
     body += `<h4 style="font-size:.88rem;font-weight:700;margin:0 0 .5rem;color:var(--green-900)">Dated this week</h4>
       <div class="table-wrap"><table>
-      <thead><tr><th>When</th><th>Job</th><th>Customer</th><th>Who's job</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>When</th><th aria-label="Photo"></th><th>Job</th><th>Customer</th><th>Who's job</th><th>Status</th><th></th></tr></thead>
       <tbody>${slots.map(rowHtml).join('')}</tbody></table></div>`;
   } else {
     body += `<p style="font-size:.85rem;color:var(--muted);margin:0 0 .75rem">No jobs with a date in this week. Open <strong>All jobs</strong> to review work, or add dates to jobs when you schedule crews.</p>`;
@@ -3965,7 +4604,7 @@ function renderWeekFromSchedule(data) {
   if (unsched.length) {
     body += `<h4 style="font-size:.88rem;font-weight:700;margin:1.1rem 0 .5rem;color:var(--green-900)">No date yet</h4>
       <div class="table-wrap"><table>
-      <thead><tr><th>When</th><th>Job</th><th>Customer</th><th>Who's job</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>When</th><th aria-label="Photo"></th><th>Job</th><th>Customer</th><th>Who's job</th><th>Status</th><th></th></tr></thead>
       <tbody>${unsched.map(rowHtml).join('')}</tbody></table></div>`;
   }
 
@@ -4133,7 +4772,7 @@ async function loadRecurringRules() {
 function renderRecurringRulesTable() {
   const tbody = document.getElementById('recurring-rules-tbody');
   if (!_recurringRules.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty">
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <p>No recurring schedules yet</p></div></td></tr>`;
     return;
@@ -4141,8 +4780,11 @@ function renderRecurringRulesTable() {
   tbody.innerHTML = _recurringRules.map(r => {
     const paused = !!r.paused;
     const cad = (r.cadence || 'weekly') === 'monthly' ? 'Monthly' : 'Weekly';
-    const descCell = `<button type="button" class="job-spec-link" onclick="event.stopPropagation();openRecurringDetail(${r.id})">${esc(r.description || '—')}</button>`;
+    const descCell = esc(r.description || '—');
+    const thumbAria = 'Recurring schedule — photos and details';
+    const thumbCell = rowMiniThumbStackHtml(r, r.description || 'Recurring schedule', 'openRecurringDetail(' + r.id + ')', thumbAria);
     return `<tr>
+      <td style="vertical-align:middle">${thumbCell}</td>
       <td>${descCell}</td>
       <td>${esc(cad)}</td>
       <td>${esc(r.start_date || '—')}</td>
@@ -4784,7 +5426,18 @@ function esc(s) {
 // ══ INIT ══
 loadWeather();
 hydrateBusinessBranding();
-loadDashboard();
+(function () {
+  const h = location.hash || '';
+  if (/^#plant-\d+$/.test(h)) {
+    nav('plants');
+    return;
+  }
+  if (/^#customer-\d+$/.test(h)) {
+    nav('customers');
+    return;
+  }
+  loadDashboard();
+})();
 if (document.getElementById('nj-status')) syncNjJobTimeFields();
 </script>
 </body>

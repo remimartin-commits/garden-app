@@ -48,3 +48,17 @@ def test_delete_plant_listing_404_when_missing() -> None:
 def test_patch_plant_listing_404_when_missing() -> None:
     r = client.patch("/api/v1/plant-listings/999999", json={"plant_name": "X"})
     assert r.status_code == 404
+
+
+def test_get_plant_listing_includes_attachments() -> None:
+    r = client.post(
+        "/api/v1/plant-listings",
+        json={"kind": "wanted", "plant_name": "Kōwhai", "quantity": "1"},
+    )
+    assert r.status_code == 201
+    lid = r.json()["id"]
+    assert r.json().get("attachments") == []
+    g = client.get(f"/api/v1/plant-listings/{lid}")
+    assert g.status_code == 200
+    assert g.json()["plant_name"] == "Kōwhai"
+    assert g.json().get("attachments") == []

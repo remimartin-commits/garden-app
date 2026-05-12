@@ -53,6 +53,8 @@ def apply_sqlite_migrations(engine) -> None:
             if "fuel_cost" not in cust_cols:
                 conn.execute(text("ALTER TABLE customers ADD COLUMN fuel_cost FLOAT DEFAULT 10"))
                 conn.execute(text("UPDATE customers SET fuel_cost = 10 WHERE fuel_cost IS NULL"))
+            if "detail_json" not in cust_cols:
+                conn.execute(text("ALTER TABLE customers ADD COLUMN detail_json TEXT"))
 
 def ensure_demo_invoice_if_empty(db: Session) -> None:
     """Skip demo invoice to avoid foreign key violations."""

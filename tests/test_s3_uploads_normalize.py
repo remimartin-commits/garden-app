@@ -35,3 +35,17 @@ def test_attachment_object_key_suffix_without_matching_base(monkeypatch: pytest.
     monkeypatch.setattr("app.config.S3_JOBS_PREFIX", "job-attachments", raising=False)
     u = "https://cdn.example/job-attachments/recurring/3/x.png"
     assert attachment_object_key_from_file_url(u) == "job-attachments/recurring/3/x.png"
+
+
+def test_attachment_object_key_plants_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.config.S3_PUBLIC_BASE_URL", "https://other.example", raising=False)
+    monkeypatch.setattr("app.config.S3_JOBS_PREFIX", "job-attachments", raising=False)
+    u = "https://cdn.example/job-attachments/plants/12/z.webp"
+    assert attachment_object_key_from_file_url(u) == "job-attachments/plants/12/z.webp"
+
+
+def test_attachment_object_key_customers_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.config.S3_PUBLIC_BASE_URL", "https://other.example", raising=False)
+    monkeypatch.setattr("app.config.S3_JOBS_PREFIX", "job-attachments", raising=False)
+    u = "https://cdn.example/job-attachments/customers/5/a.jpg"
+    assert attachment_object_key_from_file_url(u) == "job-attachments/customers/5/a.jpg"

@@ -106,6 +106,10 @@ def upload_job_image(
     scope = scope.strip().lower()
     if scope == "recurring":
         key = f"{prefix}/recurring/{int(scope_id)}/{key_id}_{fname}"
+    elif scope == "plant":
+        key = f"{prefix}/plants/{int(scope_id)}/{key_id}_{fname}"
+    elif scope == "customer":
+        key = f"{prefix}/customers/{int(scope_id)}/{key_id}_{fname}"
     else:
         key = f"{prefix}/jobs/{int(scope_id)}/{key_id}_{fname}"
 
@@ -188,11 +192,16 @@ def _attachment_key_is_managed(key: str) -> bool:
     prefix = config.S3_JOBS_PREFIX.strip().strip("/")
     if not prefix or not key:
         return False
-    return key.startswith(f"{prefix}/jobs/") or key.startswith(f"{prefix}/recurring/")
+    return (
+        key.startswith(f"{prefix}/jobs/")
+        or key.startswith(f"{prefix}/recurring/")
+        or key.startswith(f"{prefix}/plants/")
+        or key.startswith(f"{prefix}/customers/")
+    )
 
 
 def delete_stored_attachment_object(file_url: str) -> None:
-    """Delete the S3 object for a stored attachment URL if it maps to our job/recurring keys. Best-effort."""
+    """Delete the S3 object for a stored attachment URL if it maps to our upload key prefixes. Best-effort."""
     if not config.s3_job_attachments_configured():
         return
     canonical = storage_canonical_attachment_url((file_url or "").strip())

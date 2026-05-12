@@ -29,3 +29,25 @@ def test_delete_stored_attachment_object_skips_non_managed_key(monkeypatch: pyte
     monkeypatch.setattr("app.s3_uploads._s3_client", lambda: mock_client)
     delete_stored_attachment_object("https://pub.example/job-attachments/other/deadbeef.jpg")
     mock_client.delete_object.assert_not_called()
+
+
+def test_delete_stored_attachment_object_accepts_plant_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.config.s3_job_attachments_configured", lambda: True)
+    monkeypatch.setattr("app.config.S3_PUBLIC_BASE_URL", "https://pub.example", raising=False)
+    monkeypatch.setattr("app.config.S3_BUCKET_NAME", "b", raising=False)
+    monkeypatch.setattr("app.config.S3_JOBS_PREFIX", "job-attachments", raising=False)
+    mock_client = MagicMock()
+    monkeypatch.setattr("app.s3_uploads._s3_client", lambda: mock_client)
+    delete_stored_attachment_object("https://pub.example/job-attachments/plants/7/abc_x.jpg")
+    mock_client.delete_object.assert_called_once_with(Bucket="b", Key="job-attachments/plants/7/abc_x.jpg")
+
+
+def test_delete_stored_attachment_object_accepts_customer_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.config.s3_job_attachments_configured", lambda: True)
+    monkeypatch.setattr("app.config.S3_PUBLIC_BASE_URL", "https://pub.example", raising=False)
+    monkeypatch.setattr("app.config.S3_BUCKET_NAME", "b", raising=False)
+    monkeypatch.setattr("app.config.S3_JOBS_PREFIX", "job-attachments", raising=False)
+    mock_client = MagicMock()
+    monkeypatch.setattr("app.s3_uploads._s3_client", lambda: mock_client)
+    delete_stored_attachment_object("https://pub.example/job-attachments/customers/4/xyz.jpg")
+    mock_client.delete_object.assert_called_once_with(Bucket="b", Key="job-attachments/customers/4/xyz.jpg")

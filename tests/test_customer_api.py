@@ -17,6 +17,7 @@ def test_create_customer_without_property() -> None:
     assert data["name"] == "John Doe"
     assert data["email"] == "john@example.com"
     assert data["properties"] == []
+    assert data.get("attachments") == []
     assert float(data.get("fuel_cost", 0)) == 10.0
 
 
@@ -244,3 +245,31 @@ def test_import_customers_csv() -> None:
     )
     assert response.status_code == 200
     assert response.json().get("status") == "success"
+
+
+def test_customer_list_and_get_include_attachments() -> None:
+    created = client.post("/api/v1/customers", json={"name": "Snap", "email": "snap@example.com"})
+    assert created.status_code == 200
+    cid = created.json()["id"]
+    assert created.json().get("attachments") == []
+    listed = client.get("/api/v1/customers").json()["customers"]
+    row = next(c for c in listed if int(c["id"]) == int(cid))
+    assert row.get("attachments") == []
+    got = client.get(f"/api/v1/customers/{cid}")
+    assert got.status_code == 200
+    assert got.json().get("attachments") == []
+
+
+def test_patch_customer_attachments() -> None:
+    created = client.post("/api/v1/customers", json={"name": "Pic", "email": "pic@example.com"})
+    assert created.status_code == 200
+    cid = created.json()["id"]
+    url = f"https://cdn.example/job-attachments/customers/{cid}/gate.jpg"
+    r = client.patch(
+        f"/api/v1/customers/{cid}",
+        json={"attachments": [{"filename": "gate.jpg", "file_url": url}]},
+    )
+    assert r.status_code == 200
+    atts = r.json().get("attachments") or []
+    assert len(atts) == 1
+    assert atts[0]["filename"] == "gate.jpg"

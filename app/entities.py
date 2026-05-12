@@ -1301,6 +1301,7 @@ class Customer:
     price_agreed_type: str | None = None
     price_agreed_amount: float | None = None
     fuel_cost: float = 10.0
+    attachments: list[Any] = field(default_factory=list)
 
 
 @dataclass
@@ -1322,6 +1323,7 @@ class PlantListing:
     quantity: str = ""
     notes: str = ""
     status: str = ""
+    attachments: list[dict] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
