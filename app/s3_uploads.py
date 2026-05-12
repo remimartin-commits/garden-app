@@ -16,7 +16,32 @@ _ALLOWED_CT = frozenset(
         "image/heif",
     }
 )
-_MAX_BYTES = 15 * 1024 * 1024
+_MAX_BYTES = 20 * 1024 * 1024
+
+# Some clients send non-standard ``image/jpg`` or ``application/octet-stream`` for camera JPEGs.
+_EXT_TO_MIME = {
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "jpe": "image/jpeg",
+    "png": "image/png",
+    "webp": "image/webp",
+    "gif": "image/gif",
+    "heic": "image/heic",
+    "heif": "image/heif",
+}
+
+
+def _normalize_image_content_type(content_type: str | None, original_filename: str) -> str:
+    raw = (content_type or "").split(";")[0].strip().lower()
+    if raw == "image/jpg":
+        return "image/jpeg"
+    if raw in _ALLOWED_CT:
+        return raw
+    base = (original_filename or "").rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    ext = base.rsplit(".", 1)[-1].lower() if "." in base else ""
+    if raw in ("application/octet-stream", "binary/octet-stream", "") and ext in _EXT_TO_MIME:
+        return _EXT_TO_MIME[ext]
+    return raw
 
 
 def _s3_client():
@@ -49,9 +74,12 @@ def upload_job_image(
     """Upload bytes to Hetzner / S3-compatible bucket. Returns ``{filename, file_url}``."""
     if len(body) > _MAX_BYTES:
         raise ValueError(f"File too large (max {_MAX_BYTES // (1024 * 1024)} MB)")
-    ct = (content_type or "").split(";")[0].strip().lower()
+    ct = _normalize_image_content_type(content_type, original_filename)
     if ct not in _ALLOWED_CT:
-        raise ValueError("Only image uploads are allowed (JPEG, PNG, WebP, GIF, HEIC)")
+        raise ValueError(
+            "Only image uploads are allowed (JPEG, PNG, WebP, GIF, HEIC). "
+            "For JPEG, use a .jpg/.jpeg file or Content-Type image/jpeg."
+        )
     ext_fallback = "jpg"
     if "png" in ct:
         ext_fallback = "png"
