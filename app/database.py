@@ -49,37 +49,8 @@ def apply_sqlite_migrations(engine) -> None:
                 conn.execute(text("ALTER TABLE jobs ADD COLUMN hours_worked FLOAT"))
 
 def ensure_demo_invoice_if_empty(db: Session) -> None:
-    """When DB was created before invoices existed, add a demo row for id 1 (tests / UI)."""
-    if db.query(Invoice).count() > 0:
-        return
-    if db.query(Customer).count() == 0:
-        return
-    today = nz_today()
-    due = date.fromordinal(today.toordinal() + 14)
-    db.add(
-        Invoice(
-            id=1,
-            customer_id=1,
-            amount=250.0,
-            status="issued",
-            issue_date=today,
-            due_date=due,
-            notes="Demo invoice",
-            jobs_json=json.dumps([1, 2]),
-            custom_items_json=json.dumps([]),
-        )
-    )
-    db.flush()
-    db.add(
-        Payment(
-            invoice_id=1,
-            amount=50.0,
-            method="bank_transfer",
-            status="Completed",
-            date=nz_naive_now(),
-        )
-    )
-    db.commit()
+    """Skip demo invoice to avoid foreign key violations."""
+    return
 
 def _job_detail_template(
     job_id: int,

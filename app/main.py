@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
     try:
         seed_database_if_empty(db)
         ensure_default_settings(db)
-        ensure_demo_invoice_if_empty(db)
+        # ensure_demo_invoice_if_empty(db)
     finally:
         db.close()
     yield
@@ -87,7 +87,7 @@ _startup_db = SessionLocal()
 try:
     seed_database_if_empty(_startup_db)
     ensure_default_settings(_startup_db)
-    ensure_demo_invoice_if_empty(_startup_db)
+    # ensure_demo_invoice_if_empty(_startup_db)
 finally:
     _startup_db.close()
 
