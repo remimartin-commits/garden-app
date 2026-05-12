@@ -1,3 +1,4 @@
+import os
 import json
 from datetime import date, timedelta
 
@@ -7,11 +8,15 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.models import Base, Customer, Invoice, Job, Payment, Quote
 from app.nz_time import nz_naive_now, nz_today
 
-import os
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./garden_local.db")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Only use check_same_thread for SQLite
+if "sqlite" in DATABASE_URL:
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(DATABASE_URL)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():
     db = SessionLocal()
@@ -19,7 +24,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 def apply_sqlite_migrations(engine) -> None:
     """Add columns introduced after first deploy (SQLite has no ALTER in create_all)."""
@@ -43,7 +47,6 @@ def apply_sqlite_migrations(engine) -> None:
                 conn.execute(text("ALTER TABLE jobs ADD COLUMN estimated_duration_minutes INTEGER"))
             if "hours_worked" not in job_cols:
                 conn.execute(text("ALTER TABLE jobs ADD COLUMN hours_worked FLOAT"))
-
 
 def ensure_demo_invoice_if_empty(db: Session) -> None:
     """When DB was created before invoices existed, add a demo row for id 1 (tests / UI)."""
@@ -77,7 +80,6 @@ def ensure_demo_invoice_if_empty(db: Session) -> None:
         )
     )
     db.commit()
-
 
 def _job_detail_template(
     job_id: int,
@@ -125,7 +127,6 @@ def _job_detail_template(
             "forecast_url": "https://example.test/weather/mount-maunganui",
         },
     }
-
 
 def seed_database_if_empty(db: Session) -> None:
     """Insert demo rows when the customers table has no rows."""

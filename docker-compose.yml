@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://garden_user:garden_pass@db:5432/garden_db
+    depends_on:
+      - db
+    networks:
+      - garden-network
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=garden_user
+      - POSTGRES_PASSWORD=garden_pass
+      - POSTGRES_DB=garden_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - garden-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: garden-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - app
+    networks:
+      - garden-network
+
+volumes:
+  postgres_data:
+
+networks:
+  garden-network:
+    driver: bridge
