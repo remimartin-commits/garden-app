@@ -599,11 +599,46 @@
       border: 1px solid rgba(45, 106, 79, 0.12);
     }
 
+    .photo-upload-hint {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin: 0.35rem 0 0.45rem;
+      line-height: 1.45;
+      max-width: 36rem;
+    }
+    .photo-upload-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+    }
+    .photo-camera-label {
+      margin: 0;
+      cursor: pointer;
+      font-weight: 600;
+      user-select: none;
+    }
+    .photo-camera-capture {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     /* 16px+ avoids iOS zoom-on-focus on file inputs in job modals */
     #jd-photo-input,
+    #jd-photo-camera-input,
     #rd-photo-input,
+    #rd-photo-camera-input,
     #pl-photo-input,
-    #cu-photo-input {
+    #pl-photo-camera-input,
+    #cu-photo-input,
+    #cu-photo-camera-input {
       font-size: 1rem;
       max-width: 100%;
     }
@@ -1412,7 +1447,12 @@
     <div class="field" style="margin-top:1rem">
       <label>Add photos</label>
       <input type="file" id="jd-photo-input" accept="image/jpeg,image/jpg,.jpg,.jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
-      <button type="button" id="jd-upload-btn" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadJobDetailPhotos()">Upload to storage</button>
+      <p class="photo-upload-hint">Pick files to review first, then upload — or use the camera to capture and upload in one step.</p>
+      <div class="photo-upload-actions">
+        <button type="button" id="jd-upload-btn" class="btn btn-outline btn-sm" onclick="uploadJobDetailPhotos()">Upload to storage</button>
+        <label class="btn btn-outline btn-sm photo-camera-label" for="jd-photo-camera-input">Take photo</label>
+      </div>
+      <input type="file" id="jd-photo-camera-input" class="photo-camera-capture" accept="image/*" capture="environment" onchange="onJobDetailCameraCapture(event)">
       <div id="jd-upload-progress" class="jd-upload-progress" role="status" aria-live="polite" hidden></div>
     </div>
     <div class="modal-actions">
@@ -1431,7 +1471,12 @@
     <div class="field" style="margin-top:1rem">
       <label>Add photos</label>
       <input type="file" id="rd-photo-input" accept="image/jpeg,image/jpg,.jpg,.jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
-      <button type="button" id="rd-upload-btn" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadRecurringDetailPhotos()">Upload to storage</button>
+      <p class="photo-upload-hint">Pick files to review first, then upload — or use the camera to capture and upload in one step.</p>
+      <div class="photo-upload-actions">
+        <button type="button" id="rd-upload-btn" class="btn btn-outline btn-sm" onclick="uploadRecurringDetailPhotos()">Upload to storage</button>
+        <label class="btn btn-outline btn-sm photo-camera-label" for="rd-photo-camera-input">Take photo</label>
+      </div>
+      <input type="file" id="rd-photo-camera-input" class="photo-camera-capture" accept="image/*" capture="environment" onchange="onRecurringDetailCameraCapture(event)">
       <div id="rd-upload-progress" class="jd-upload-progress" role="status" aria-live="polite" hidden></div>
     </div>
     <div class="modal-actions">
@@ -1556,7 +1601,12 @@
     <div class="field" style="margin-top:1rem">
       <label>Add photos</label>
       <input type="file" id="cu-photo-input" accept="image/jpeg,image/jpg,.jpg,.jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
-      <button type="button" id="cu-upload-btn" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadCustomerPhotos()">Upload to storage</button>
+      <p class="photo-upload-hint">Pick files to review first, then upload — or use the camera to capture and upload in one step.</p>
+      <div class="photo-upload-actions">
+        <button type="button" id="cu-upload-btn" class="btn btn-outline btn-sm" onclick="uploadCustomerPhotos()">Upload to storage</button>
+        <label class="btn btn-outline btn-sm photo-camera-label" for="cu-photo-camera-input">Take photo</label>
+      </div>
+      <input type="file" id="cu-photo-camera-input" class="photo-camera-capture" accept="image/*" capture="environment" onchange="onCustomerDetailCameraCapture(event)">
       <div id="cu-upload-progress" class="jd-upload-progress" role="status" aria-live="polite" hidden></div>
     </div>
     <div class="modal-actions">
@@ -1855,7 +1905,12 @@
     <div class="field" style="margin-top:1rem">
       <label>Add photos</label>
       <input type="file" id="pl-photo-input" accept="image/jpeg,image/jpg,.jpg,.jpeg,image/png,image/webp,image/gif,image/heic,.heic" multiple>
-      <button type="button" id="pl-upload-btn" class="btn btn-outline btn-sm" style="margin-top:.4rem" onclick="uploadPlantListingPhotos()">Upload to storage</button>
+      <p class="photo-upload-hint">Pick files to review first, then upload — or use the camera to capture and upload in one step.</p>
+      <div class="photo-upload-actions">
+        <button type="button" id="pl-upload-btn" class="btn btn-outline btn-sm" onclick="uploadPlantListingPhotos()">Upload to storage</button>
+        <label class="btn btn-outline btn-sm photo-camera-label" for="pl-photo-camera-input">Take photo</label>
+      </div>
+      <input type="file" id="pl-photo-camera-input" class="photo-camera-capture" accept="image/*" capture="environment" onchange="onPlantDetailCameraCapture(event)">
       <div id="pl-upload-progress" class="jd-upload-progress" role="status" aria-live="polite" hidden></div>
     </div>
     <div class="modal-actions">
@@ -2766,6 +2821,77 @@ function reorderAttachmentsArray(items, fromIdx, toIdx) {
   return a;
 }
 
+/**
+ * POST each file to ``urlPrefix`` + ``/`` + entityId + ``/attachments``.
+ * ``ui.clearInputs``: input element(s) to reset after a full successful run.
+ * ``ui.afterEach(i, total)`` optional (e.g. refresh cached job row).
+ * ``ui.afterAll()`` optional (e.g. reload list and reopen detail).
+ */
+async function postAttachmentFilesSequential(urlPrefix, entityId, files, ui) {
+  ui = ui || {};
+  if (!files || !files.length) return false;
+  const prog = ui.progressId ? document.getElementById(ui.progressId) : null;
+  const hint = ui.hintId ? document.getElementById(ui.hintId) : null;
+  const btn = ui.btnId ? document.getElementById(ui.btnId) : null;
+  const total = files.length;
+  const base = String(urlPrefix || '').replace(/\/$/, '');
+  if (prog) {
+    prog.hidden = false;
+    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
+  }
+  if (btn) btn.disabled = true;
+  try {
+    for (let i = 0; i < total; i++) {
+      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
+      const fd = new FormData();
+      fd.append('file', files[i]);
+      const r = await fetch(base + '/' + encodeURIComponent(entityId) + '/attachments', { method: 'POST', body: fd });
+      if (!r.ok) {
+        let msg = await r.text();
+        try {
+          const o = JSON.parse(msg);
+          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
+        } catch (e2) { /* keep */ }
+        if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
+        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+        return false;
+      }
+      if (typeof ui.afterEach === 'function') {
+        try {
+          await ui.afterEach(i, total);
+        } catch (e3) { /* ignore */ }
+      }
+    }
+    const toClear = ui.clearInputs;
+    if (toClear) {
+      (Array.isArray(toClear) ? toClear : [toClear]).forEach(function (el) {
+        if (el) el.value = '';
+      });
+    }
+    if (prog) {
+      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
+      setTimeout(function () {
+        if (prog) {
+          prog.hidden = true;
+          prog.textContent = '';
+        }
+      }, 1600);
+    }
+    if (typeof ui.afterAll === 'function') {
+      try {
+        await ui.afterAll();
+      } catch (e4) { /* ignore */ }
+    }
+    return true;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 async function persistJobAttachmentsFromList(jobId, atts) {
   const pr = await fetch('/api/v1/jobs/' + encodeURIComponent(jobId), {
     method: 'PATCH',
@@ -3015,57 +3141,40 @@ async function removePlantListingPhoto(listingId, idx) {
 
 async function uploadPlantListingPhotos() {
   const inp = document.getElementById('pl-photo-input');
-  const prog = document.getElementById('pl-upload-progress');
-  const btn = document.getElementById('pl-upload-btn');
   if (_plDetailId == null || Number.isNaN(_plDetailId) || !inp || !inp.files || !inp.files.length) {
     toast('Choose one or more images', 'error');
     return;
   }
-  const files = Array.from(inp.files);
-  const hint = document.getElementById('pl-storage-hint');
-  const total = files.length;
-  if (prog) {
-    prog.hidden = false;
-    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
-  }
-  if (btn) btn.disabled = true;
-  try {
-    for (let i = 0; i < files.length; i++) {
-      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
-      const fd = new FormData();
-      fd.append('file', files[i]);
-      const r = await fetch('/api/v1/plant-listings/' + encodeURIComponent(_plDetailId) + '/attachments', { method: 'POST', body: fd });
-      if (!r.ok) {
-        let msg = await r.text();
-        try {
-          const o = JSON.parse(msg);
-          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
-        } catch (e2) { /* keep */ }
-        if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
-        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
-        if (prog) {
-          prog.hidden = true;
-          prog.textContent = '';
-        }
-        return;
-      }
-    }
-    inp.value = '';
-    if (prog) {
-      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
-      setTimeout(function () {
-        if (prog) {
-          prog.hidden = true;
-          prog.textContent = '';
-        }
-      }, 1600);
-    }
-    await loadPlantListings();
-    toast('Photos uploaded');
-    openPlantDetail(_plDetailId, { setHash: false });
-  } finally {
-    if (btn) btn.disabled = false;
-  }
+  const ok = await postAttachmentFilesSequential('/api/v1/plant-listings', _plDetailId, Array.from(inp.files), {
+    progressId: 'pl-upload-progress',
+    hintId: 'pl-storage-hint',
+    btnId: 'pl-upload-btn',
+    clearInputs: [inp],
+    afterAll: async function () {
+      await loadPlantListings();
+      toast('Photos uploaded');
+      openPlantDetail(_plDetailId, { setHash: false });
+    },
+  });
+  if (!ok) return;
+}
+
+async function onPlantDetailCameraCapture(ev) {
+  const inp = ev && ev.target;
+  if (_plDetailId == null || Number.isNaN(_plDetailId) || !inp || !inp.files || !inp.files.length) return;
+  const gallery = document.getElementById('pl-photo-input');
+  const ok = await postAttachmentFilesSequential('/api/v1/plant-listings', _plDetailId, Array.from(inp.files), {
+    progressId: 'pl-upload-progress',
+    hintId: 'pl-storage-hint',
+    btnId: 'pl-upload-btn',
+    clearInputs: [inp, gallery],
+    afterAll: async function () {
+      await loadPlantListings();
+      toast('Photo uploaded');
+      openPlantDetail(_plDetailId, { setHash: false });
+    },
+  });
+  if (!ok) inp.value = '';
 }
 
 let _cuDetailId = null;
@@ -3205,57 +3314,40 @@ async function removeCustomerPhoto(customerId, idx) {
 
 async function uploadCustomerPhotos() {
   const inp = document.getElementById('cu-photo-input');
-  const prog = document.getElementById('cu-upload-progress');
-  const btn = document.getElementById('cu-upload-btn');
   if (_cuDetailId == null || Number.isNaN(_cuDetailId) || !inp || !inp.files || !inp.files.length) {
     toast('Choose one or more images', 'error');
     return;
   }
-  const files = Array.from(inp.files);
-  const hint = document.getElementById('cu-storage-hint');
-  const total = files.length;
-  if (prog) {
-    prog.hidden = false;
-    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
-  }
-  if (btn) btn.disabled = true;
-  try {
-    for (let i = 0; i < files.length; i++) {
-      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
-      const fd = new FormData();
-      fd.append('file', files[i]);
-      const r = await fetch('/api/v1/customers/' + encodeURIComponent(_cuDetailId) + '/attachments', { method: 'POST', body: fd });
-      if (!r.ok) {
-        let msg = await r.text();
-        try {
-          const o = JSON.parse(msg);
-          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
-        } catch (e2) { /* keep */ }
-        if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
-        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
-        if (prog) {
-          prog.hidden = true;
-          prog.textContent = '';
-        }
-        return;
-      }
-    }
-    inp.value = '';
-    if (prog) {
-      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
-      setTimeout(function () {
-        if (prog) {
-          prog.hidden = true;
-          prog.textContent = '';
-        }
-      }, 1600);
-    }
-    await loadCustomers();
-    toast('Photos uploaded');
-    openCustomerDetail(_cuDetailId, { setHash: false });
-  } finally {
-    if (btn) btn.disabled = false;
-  }
+  const ok = await postAttachmentFilesSequential('/api/v1/customers', _cuDetailId, Array.from(inp.files), {
+    progressId: 'cu-upload-progress',
+    hintId: 'cu-storage-hint',
+    btnId: 'cu-upload-btn',
+    clearInputs: [inp],
+    afterAll: async function () {
+      await loadCustomers();
+      toast('Photos uploaded');
+      openCustomerDetail(_cuDetailId, { setHash: false });
+    },
+  });
+  if (!ok) return;
+}
+
+async function onCustomerDetailCameraCapture(ev) {
+  const inp = ev && ev.target;
+  if (_cuDetailId == null || Number.isNaN(_cuDetailId) || !inp || !inp.files || !inp.files.length) return;
+  const gallery = document.getElementById('cu-photo-input');
+  const ok = await postAttachmentFilesSequential('/api/v1/customers', _cuDetailId, Array.from(inp.files), {
+    progressId: 'cu-upload-progress',
+    hintId: 'cu-storage-hint',
+    btnId: 'cu-upload-btn',
+    clearInputs: [inp, gallery],
+    afterAll: async function () {
+      await loadCustomers();
+      toast('Photo uploaded');
+      openCustomerDetail(_cuDetailId, { setHash: false });
+    },
+  });
+  if (!ok) inp.value = '';
 }
 
 function jobDetailPhotosHtml(j) {
@@ -3357,65 +3449,51 @@ async function removeJobAttachment(jobId, idx) {
   }
 }
 
+async function _refreshJobInListCache(jobId) {
+  const ix = _jobs.findIndex(function (x) { return Number(x.job_id) === Number(jobId); });
+  if (ix < 0) return;
+  try {
+    const jr = await fetch('/api/v1/jobs/' + encodeURIComponent(jobId));
+    if (jr.ok) _jobs[ix] = await jr.json();
+  } catch (e) { /* ignore */ }
+}
+
 async function uploadJobDetailPhotos() {
   const inp = document.getElementById('jd-photo-input');
-  const prog = document.getElementById('jd-upload-progress');
-  const btn = document.getElementById('jd-upload-btn');
   if (_jdJobId == null || Number.isNaN(_jdJobId) || !inp || !inp.files || !inp.files.length) {
     toast('Choose one or more images', 'error');
     return;
   }
-  const files = Array.from(inp.files);
-  const hint = document.getElementById('jd-storage-hint');
-  const total = files.length;
-  if (prog) {
-    prog.hidden = false;
-    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
-  }
-  if (btn) btn.disabled = true;
-  try {
-    for (let i = 0; i < files.length; i++) {
-      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
-      const fd = new FormData();
-      fd.append('file', files[i]);
-      const r = await fetch('/api/v1/jobs/' + encodeURIComponent(_jdJobId) + '/attachments', { method: 'POST', body: fd });
-      if (!r.ok) {
-        let msg = await r.text();
-        try {
-          const o = JSON.parse(msg);
-          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
-        } catch (e2) { /* keep */ }
-        if (hint && (r.status === 503 || (msg && String(msg).indexOf('not configured') >= 0))) hint.style.display = '';
-        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
-        if (prog) {
-          prog.hidden = true;
-          prog.textContent = '';
-        }
-        return;
-      }
-      const ix = _jobs.findIndex(function (x) { return Number(x.job_id) === Number(_jdJobId); });
-      if (ix >= 0) {
-        try {
-          const jr = await fetch('/api/v1/jobs/' + encodeURIComponent(_jdJobId));
-          if (jr.ok) _jobs[ix] = await jr.json();
-        } catch (e3) { /* ignore */ }
-      }
-    }
-    inp.value = '';
-    if (prog) {
-      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
-      setTimeout(function () {
-        if (prog) {
-          prog.hidden = true;
-          prog.textContent = '';
-        }
-      }, 1600);
-    }
-    toast('Photos uploaded');
-    openJobDetail(_jdJobId, { setHash: false });
-  } finally {
-    if (btn) btn.disabled = false;
-  }
+  const ok = await postAttachmentFilesSequential('/api/v1/jobs', _jdJobId, Array.from(inp.files), {
+    progressId: 'jd-upload-progress',
+    hintId: 'jd-storage-hint',
+    btnId: 'jd-upload-btn',
+    clearInputs: [inp],
+    afterEach: function () { return _refreshJobInListCache(_jdJobId); },
+    afterAll: async function () {
+      toast('Photos uploaded');
+      openJobDetail(_jdJobId, { setHash: false });
+    },
+  });
+  if (!ok) return;
+}
+
+async function onJobDetailCameraCapture(ev) {
+  const inp = ev && ev.target;
+  if (_jdJobId == null || Number.isNaN(_jdJobId) || !inp || !inp.files || !inp.files.length) return;
+  const gallery = document.getElementById('jd-photo-input');
+  const ok = await postAttachmentFilesSequential('/api/v1/jobs', _jdJobId, Array.from(inp.files), {
+    progressId: 'jd-upload-progress',
+    hintId: 'jd-storage-hint',
+    btnId: 'jd-upload-btn',
+    clearInputs: [inp, gallery],
+    afterEach: function () { return _refreshJobInListCache(_jdJobId); },
+    afterAll: async function () {
+      toast('Photo uploaded');
+      openJobDetail(_jdJobId, { setHash: false });
+    },
+  });
+  if (!ok) inp.value = '';
 }
 
 function recurringDetailHtml(r) {
@@ -3517,57 +3595,40 @@ async function removeRecurringAttachment(ruleId, idx) {
 
 async function uploadRecurringDetailPhotos() {
   const inp = document.getElementById('rd-photo-input');
-  const prog = document.getElementById('rd-upload-progress');
-  const btn = document.getElementById('rd-upload-btn');
   if (_rdRuleId == null || Number.isNaN(_rdRuleId) || !inp || !inp.files || !inp.files.length) {
     toast('Choose one or more images', 'error');
     return;
   }
-  const files = Array.from(inp.files);
-  const hint = document.getElementById('rd-storage-hint');
-  const total = files.length;
-  if (prog) {
-    prog.hidden = false;
-    prog.textContent = total > 1 ? 'Starting upload (1 of ' + total + ')…' : 'Uploading…';
-  }
-  if (btn) btn.disabled = true;
-  try {
-    for (let i = 0; i < files.length; i++) {
-      if (prog) prog.textContent = total > 1 ? ('Uploading ' + (i + 1) + ' of ' + total + '…') : 'Uploading…';
-      const fd = new FormData();
-      fd.append('file', files[i]);
-      const r = await fetch('/api/v1/recurring-job-rules/' + encodeURIComponent(_rdRuleId) + '/attachments', { method: 'POST', body: fd });
-      if (!r.ok) {
-        let msg = await r.text();
-        try {
-          const o = JSON.parse(msg);
-          msg = o.detail != null ? (typeof o.detail === 'string' ? o.detail : JSON.stringify(o.detail)) : msg;
-        } catch (e2) { /* keep */ }
-        if (hint && r.status === 503) hint.style.display = '';
-        toast((total > 1 ? ('Upload stopped at ' + (i + 1) + ' of ' + total + '. ') : '') + (msg || 'Upload failed'), 'error');
-        if (prog) {
-          prog.hidden = true;
-          prog.textContent = '';
-        }
-        return;
-      }
-    }
-    inp.value = '';
-    if (prog) {
-      prog.textContent = total > 1 ? ('Done — ' + total + ' photos uploaded.') : 'Done.';
-      setTimeout(function () {
-        if (prog) {
-          prog.hidden = true;
-          prog.textContent = '';
-        }
-      }, 1600);
-    }
-    await loadRecurringRules();
-    toast('Photos uploaded');
-    openRecurringDetail(_rdRuleId, { setHash: false });
-  } finally {
-    if (btn) btn.disabled = false;
-  }
+  const ok = await postAttachmentFilesSequential('/api/v1/recurring-job-rules', _rdRuleId, Array.from(inp.files), {
+    progressId: 'rd-upload-progress',
+    hintId: 'rd-storage-hint',
+    btnId: 'rd-upload-btn',
+    clearInputs: [inp],
+    afterAll: async function () {
+      await loadRecurringRules();
+      toast('Photos uploaded');
+      openRecurringDetail(_rdRuleId, { setHash: false });
+    },
+  });
+  if (!ok) return;
+}
+
+async function onRecurringDetailCameraCapture(ev) {
+  const inp = ev && ev.target;
+  if (_rdRuleId == null || Number.isNaN(_rdRuleId) || !inp || !inp.files || !inp.files.length) return;
+  const gallery = document.getElementById('rd-photo-input');
+  const ok = await postAttachmentFilesSequential('/api/v1/recurring-job-rules', _rdRuleId, Array.from(inp.files), {
+    progressId: 'rd-upload-progress',
+    hintId: 'rd-storage-hint',
+    btnId: 'rd-upload-btn',
+    clearInputs: [inp, gallery],
+    afterAll: async function () {
+      await loadRecurringRules();
+      toast('Photo uploaded');
+      openRecurringDetail(_rdRuleId, { setHash: false });
+    },
+  });
+  if (!ok) inp.value = '';
 }
 
 function firstAttachmentFileUrl(entity) {
